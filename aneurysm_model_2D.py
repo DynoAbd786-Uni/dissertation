@@ -10,6 +10,8 @@ import xlb.velocity_set
 import warp as wp
 import jax.numpy as jnp
 import numpy as np
+import time
+from datetime import timedelta
 
 
 class AneurysmSimulation2D:
@@ -160,14 +162,65 @@ class AneurysmSimulation2D:
         )
 
     def run(self, num_steps, post_process_interval=100):
+        import time
+        from datetime import timedelta
+        
+        # Initialize timing variables
+        start_time = time.time()
+        last_checkpoint = start_time
+        steps_per_second = 0
+        estimated_time = "calculating..."
+        total_post_process_time = 0
+        post_process_calls = 0
+        
+        # Calculate total nodes for MLUPS
+        total_nodes = self.grid_shape[0] * self.grid_shape[1]
+        
         for i in range(num_steps):
             self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, i)
             self.f_0, self.f_1 = self.f_1, self.f_0
 
-            if i % post_process_interval == 0 or i == num_steps - 1:
-                self.post_process(i)
+            if i % post_process_interval == 0:
+                if i > 0:
+                    current_time = time.time()
+                    elapsed = current_time - last_checkpoint
+                    steps_per_second = post_process_interval / elapsed
+                    mlups = (total_nodes * steps_per_second) / 1e6  # Convert to millions
+                    remaining_steps = num_steps - i
+                    estimated_seconds = remaining_steps / steps_per_second
+                    estimated_time = str(timedelta(seconds=int(estimated_seconds)))
+                    last_checkpoint = current_time
+                
+                    print(f"Step {i}/{num_steps} ({(i/num_steps)*100:.1f}%)")
+                    print(f"Performance: {mlups:.2f} MLUPS")
+                    print(f"Steps per second: {steps_per_second:.1f}")
+                    print(f"Estimated time remaining: {estimated_time}")
+                
+                # Measure post-processing time
+                post_process_time = self.post_process(i)
+                total_post_process_time += post_process_time
+                post_process_calls += 1
+                print(f"Post-process time: {post_process_time:.3f}s")
+        
+        # Final timing statistics
+        total_time = time.time() - start_time
+        simulation_time = total_time - total_post_process_time
+        average_steps_per_second = num_steps / simulation_time
+        avg_post_process_time = total_post_process_time / post_process_calls if post_process_calls > 0 else 0
+        avg_mlups = (total_nodes * average_steps_per_second) / 1e6
+        
+        print("\nSimulation completed!")
+        print(f"Total time: {str(timedelta(seconds=int(total_time)))}")
+        print(f"Pure simulation time: {str(timedelta(seconds=int(simulation_time)))}")
+        print(f"Total post-processing time: {str(timedelta(seconds=int(total_post_process_time)))}")
+        print(f"Average post-process time: {avg_post_process_time:.3f}s")
+        print(f"Average performance: {avg_mlups:.2f} MLUPS")
+        print(f"Grid size: {self.grid_shape[0]}x{self.grid_shape[1]} = {total_nodes} nodes")
 
     def post_process(self, i):
+        # Tracking post processing time
+        post_process_start = time.time()
+
         # Write the results. We'll use JAX backend for the post-processing
         if not isinstance(self.f_0, jnp.ndarray):
             # If the backend is warp, we need to drop the last dimension added by warp for 2D simulations
@@ -190,8 +243,22 @@ class AneurysmSimulation2D:
 
         fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
 
-        save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
-        save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
+        # save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
+        
+        # Save image with fixed colorbar range
+        # Use theoretical maximum velocity as upper bound
+        vmin = 0.0
+        vmax = self.u_max * 1.5  # 20% margin above inlet velocity
+        save_image(fields["u_magnitude"], 
+                timestep=i, 
+                prefix="aneurysm",
+                vmin=vmin,
+                vmax=vmax)
+                
+        post_process_time = time.time() - post_process_start
+        return post_process_time
+
+        
 
 
 def aneurysm_simulation_setup() -> AneurysmSimulation2D:
@@ -205,7 +272,7 @@ def aneurysm_simulation_setup() -> AneurysmSimulation2D:
     # to reduce the computational cost
     vessel_length_m = 10 * mm_to_m    # 10 mm long
     vessel_width_m = 10 * mm_to_m      # 10 mm wide
-    resolution_m = 0.01 * mm_to_m     # Each grid cell = 0.01 mm
+    resolution_m = 0.01 * mm_to_m     # Each grid cell = 0.01 mm. 0.005 mm is the best stable resolution on my laptop. cant go lower than 0.001 due to laptop constraints
     
     # Calculate grid dimensions
     grid_x = int(round(vessel_length_m / resolution_m))
@@ -228,7 +295,7 @@ def aneurysm_simulation_setup() -> AneurysmSimulation2D:
     # Calculate relaxation parameter (tau) from physical properties
     kinematic_viscosity = 3.3e-6  # Blood viscosity in m^2/s
     dx = resolution_m  # Grid spacing in meters
-    dt = 1e-7  # Time step in seconds
+    dt = 5e-7  # Time step in seconds. Lower is better, but significantly slower
     nu_lbm = kinematic_viscosity * dt / (dx**2)
     omega = 1.0 / (3 * nu_lbm + 0.5)
 
@@ -244,7 +311,7 @@ def aneurysm_simulation_setup() -> AneurysmSimulation2D:
 
 if __name__ == "__main__":
     aneurysm_simulation = aneurysm_simulation_setup()
-    aneurysm_simulation.run(10000, post_process_interval=100)
+    aneurysm_simulation.run(100000, post_process_interval=200)
 
     # TODO:
     # look into the post_process method to see if it can be modified to save the results in a more useful format
@@ -255,3 +322,4 @@ if __name__ == "__main__":
     # expand to 3D
     # look into how much time/ the necessary conditions required to declare a flow model "stable". this may be velocity related
     # refine this and add better comments 
+    # develop algorithms to remove redundant pixels from simulation results (trimming dims)
