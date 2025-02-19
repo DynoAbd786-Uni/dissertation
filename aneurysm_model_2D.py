@@ -12,10 +12,15 @@ import jax.numpy as jnp
 import numpy as np
 import time
 from datetime import timedelta
+import json
+from datetime import datetime
 
 
 class AneurysmSimulation2D:
-    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution):
+    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params):
+        # Store input parameters
+        self.input_params = input_params
+        
         # initialize backend
         xlb.init(
             velocity_set=velocity_set,
@@ -29,7 +34,9 @@ class AneurysmSimulation2D:
         self.precision_policy = precision_policy
         self.omega = omega
         self.resolution = resolution
-        self.u_max = 0.04  # Maximum inlet velocity
+        self.u_max = input_params["u_max"]
+        self.dt = input_params["dt"]
+        self.dx = input_params["dx"]
         self.boundary_conditions = []
 
         # Create grid using factory
@@ -162,8 +169,8 @@ class AneurysmSimulation2D:
         )
 
     def run(self, num_steps, post_process_interval=100):
-        import time
-        from datetime import timedelta
+        # Save parameters before starting simulation
+        self.save_simulation_parameters()
         
         # Initialize timing variables
         start_time = time.time()
@@ -243,7 +250,7 @@ class AneurysmSimulation2D:
 
         fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
 
-        # save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
+        save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
         
         # Save image with fixed colorbar range
         # Use theoretical maximum velocity as upper bound
@@ -258,60 +265,118 @@ class AneurysmSimulation2D:
         post_process_time = time.time() - post_process_start
         return post_process_time
 
+    def save_simulation_parameters(self, filename_prefix="aneurysm_params"):
+        """Save simulation parameters to JSON file"""
+        parameters = {
+            "input_parameters": self.input_params,
+            "physical": {
+                "vessel_length": self.grid_shape[0] * self.resolution,
+                "vessel_width": self.grid_shape[1] * self.resolution,
+                "resolution": self.resolution,
+                "kinematic_viscosity": self.input_params["kinematic_viscosity"],
+                "max_velocity": self.u_max,
+                "dt": self.dt,
+                "dx": self.dx
+            },
+            "numerical": {
+                "grid_shape": self.grid_shape,
+                "omega": self.omega,
+                "tau": 1/self.omega,
+                "backend": str(self.backend),
+                "precision_policy": str(self.precision_policy),
+                "velocity_set": "D2Q9"
+            },
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "total_nodes": self.grid_shape[0] * self.grid_shape[1]
+            }
+        }
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{filename_prefix}_{timestamp}.json"
+        
+        with open(filename, 'w') as f:
+            json.dump(parameters, f, indent=4)
+        
+        print(f"Parameters saved to {filename}")
         
 
 
-def aneurysm_simulation_setup() -> AneurysmSimulation2D:
-    # Constants 
-    # TODO: move to more appropriate place
+def aneurysm_simulation_setup(
+    vessel_length_mm=10,
+    vessel_width_mm=10,
+    resolution_mm=0.01,
+    kinematic_viscosity=3.3e-6,  # Blood viscosity in m^2/s
+    dt=5e-7,  # Time step in seconds
+    u_max=0.04  # Maximum inlet velocity in lattice units
+) -> AneurysmSimulation2D:
+    """Setup aneurysm simulation with configurable parameters"""
+    
+    # Convert mm to meters
     mm_to_m = 0.001
-
-    # Physical parameters
-    # Ideally, for the final protoype, we find the smallest possible values for these parameters
-    # based on the actual physical dimensions of the aneurysm model
-    # to reduce the computational cost
-    vessel_length_m = 10 * mm_to_m    # 10 mm long
-    vessel_width_m = 10 * mm_to_m      # 10 mm wide
-    resolution_m = 0.01 * mm_to_m     # Each grid cell = 0.01 mm. 0.005 mm is the best stable resolution on my laptop. cant go lower than 0.001 due to laptop constraints
+    vessel_length_m = vessel_length_mm * mm_to_m
+    vessel_width_m = vessel_width_mm * mm_to_m
+    resolution_m = resolution_mm * mm_to_m
     
     # Calculate grid dimensions
     grid_x = int(round(vessel_length_m / resolution_m))
     grid_y = int(round(vessel_width_m / resolution_m))
     grid_shape = (grid_x, grid_y)
 
-    print(grid_shape)
-    
     # Simulation parameters
     backend = ComputeBackend.WARP
     precision_policy = PrecisionPolicy.FP32FP32
-    # kinematic_viscosity = 3.3e-6 * units.m**2/units.s  # Blood viscosity
     
-    # Velocity set for 2D
     velocity_set = xlb.velocity_set.D2Q9(
         precision_policy=precision_policy,
         backend=backend
     )
     
-    # Calculate relaxation parameter (tau) from physical properties
-    kinematic_viscosity = 3.3e-6  # Blood viscosity in m^2/s
-    dx = resolution_m  # Grid spacing in meters
-    dt = 5e-7  # Time step in seconds. Lower is better, but significantly slower
+    # Calculate relaxation parameter (tau)
+    dx = resolution_m
     nu_lbm = kinematic_viscosity * dt / (dx**2)
     omega = 1.0 / (3 * nu_lbm + 0.5)
+    tau = 1/omega
 
-    print((3 * nu_lbm + 0.5))   # Tau value. should be in range 0.5 to 2.0 for stability (source: https://www.researchgate.net/publication/320000000_Lattice_Boltzmann_Methods_for_Complex_Flows_in_Microgeometries)
-    assert 0.5 <= (3 * nu_lbm + 0.5) <= 2.0, "Tau value out of range!"
-    print(f"omega = {omega}")
-
-    velocity_set = xlb.velocity_set.D2Q9(precision_policy=precision_policy, backend=backend)
-
-    simulation = AneurysmSimulation2D(omega, grid_shape, velocity_set, backend, precision_policy, resolution_m)
+    # Validate tau for stability
+    assert 0.5 <= tau <= 2.0, f"Tau value {tau:.3f} out of stable range [0.5, 2.0]"
+    
+    # Create simulation with all parameters
+    simulation = AneurysmSimulation2D(
+        omega=omega,
+        grid_shape=grid_shape,
+        velocity_set=velocity_set,
+        backend=backend,
+        precision_policy=precision_policy,
+        resolution=resolution_m,
+        input_params={
+            "vessel_length_mm": vessel_length_mm,
+            "vessel_width_mm": vessel_width_mm,
+            "resolution_mm": resolution_mm,
+            "kinematic_viscosity": kinematic_viscosity,
+            "dt": dt,
+            "u_max": u_max,
+            "dx": dx
+        }
+    )
+    
     return simulation
 
 
 if __name__ == "__main__":
-    aneurysm_simulation = aneurysm_simulation_setup()
-    aneurysm_simulation.run(100000, post_process_interval=200)
+    # Create simulation with custom parameters
+    simulation = aneurysm_simulation_setup(
+        vessel_length_mm=10,
+        vessel_width_mm=10,
+        resolution_mm=0.01,
+        kinematic_viscosity=3.3e-6,
+        dt=5e-7,
+        u_max=0.04
+    )
+    
+    # Run simulation
+    simulation.run(10000, post_process_interval=100)
 
     # TODO:
     # look into the post_process method to see if it can be modified to save the results in a more useful format
