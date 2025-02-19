@@ -1,3 +1,5 @@
 **/*.vtk
 **/*.png
 **/*.json
+**/*.zip
+**/*.tar.gz
