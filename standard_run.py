@@ -8,7 +8,8 @@ def aneurysm_simulation_setup(
     bulge_horizontal_mm=6,
     bulge_vertical_mm=4,
     resolution_mm=0.01,
-    kinematic_viscosity=3.3e-6,
+    dynamic_viscosity=0.0035,
+    blood_density=1056,
     dt=5e-7,
     u_max=0.04,
     fps=100
@@ -36,7 +37,7 @@ def aneurysm_simulation_setup(
     vessel_centre_lu = grid_y // 2
     
     # Simulation parameters
-    backend = ComputeBackend.JAX
+    backend = ComputeBackend.WARP
     precision_policy = PrecisionPolicy.FP32FP32
     
     velocity_set = xlb.velocity_set.D2Q9(
@@ -44,6 +45,9 @@ def aneurysm_simulation_setup(
         backend=backend
     )
     
+    # Calculate kinematic viscosity from dynamic viscosity and density
+    kinematic_viscosity = dynamic_viscosity / blood_density  # m²/s
+
     # Calculate relaxation parameter
     dx = resolution_m
     nu_lbm = kinematic_viscosity * dt / (dx**2)
@@ -98,10 +102,11 @@ if __name__ == "__main__":
         bulge_horizontal_mm=6,       # 6mm horizontal bulge
         bulge_vertical_mm=4,         # 4mm vertical bulge
         resolution_mm=0.01,          # 0.01mm resolution
-        kinematic_viscosity=3.3e-6,  # Blood viscosity
+        dynamic_viscosity=0.0035,    # Blood dynamic viscosity (Pa·s)
+        blood_density=1056,          # Blood density (kg/m³)
         dt=5e-7,                     # Time step
         u_max=0.04,                  # More realistic blood velocity TODO: remove in place for a better flow model
-        fps=100000                     # Output frames per second
+        fps=1000                     # Output frames per second
     )
     
     # Run simulation

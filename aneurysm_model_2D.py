@@ -18,6 +18,7 @@ from pathlib import Path
 import jax
 
 from custom_time_depenadant_zouhe_bc_class import TimeDependentZouHeBC
+from velocity_profiles import VelocityProfileRegistry
 
 
 MM_TO_M = 0.001
@@ -31,7 +32,8 @@ class AneurysmSimulation2D:
             default_precision_policy=precision_policy,
         )
 
-        print(jax.devices())
+        # Start velocity profile manager
+        self.velocity_profiles = VelocityProfileRegistry(default_backend=backend, default_precision_policy=precision_policy)
 
         # Store input parameters
         self.input_params = input_params
@@ -204,9 +206,10 @@ class AneurysmSimulation2D:
         bc_walls = FullwayBounceBackBC(indices=walls)
         
         # Inlet: constant velocity profile
-        bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
+        # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
 
         # bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
+        bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("ICA"), indices=inlet)
         # bc_inlet = ZouHeBC("velocity", prescribed_value=(0.0, self.u_max), indices=inlet)
         
         # Outlet: zero-gradient outflow
