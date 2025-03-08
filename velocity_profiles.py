@@ -28,12 +28,22 @@ class VelocityProfileRegistry:
         
         # Register built-in profiles
         self._register_built_in_profiles()
-        self.import_profiles_from_csv("params/velocity_profile_normalized.csv", profile_columns=["ICA", "CCA"], preview_plot=True)
+        # self.import_profiles_from_csv("params/velocity_profile_normalized.csv", profile_columns=["ICA", "CCA"], preview_plot=True)
         
     def _register_built_in_profiles(self):
         """Register all built-in velocity profiles."""
         self.register("sinusoidal", self.create_sinusoidal_profile, 
-                     "Sinusoidal velocity profile with adjustable frequency")
+                    "Sinusoidal velocity profile with adjustable frequency")
+        
+        # Add these lines to register the hybrid carotid profiles
+        try:
+            self.register("hybrid_ica", lambda **kwargs: self.create_hybrid_velocity_profile(profile_type='ICA', **kwargs),
+                        "Hybrid Fourier/analytical model for Internal Carotid Artery")
+            self.register("hybrid_cca", lambda **kwargs: self.create_hybrid_velocity_profile(profile_type='CCA', **kwargs), 
+                        "Hybrid Fourier/analytical model for Common Carotid Artery")
+            print("Registered hybrid carotid velocity profiles")
+        except ImportError as e:
+            print(f"Note: Could not register hybrid profiles: {e}")
         
     def register(self, name: str, profile_factory: Callable, description: str = None):
         """
@@ -425,6 +435,389 @@ class VelocityProfileRegistry:
             print(f"Registered cyclic profile '{profile_name}' from CSV column '{col_name}'")
         
         return profile_names
+
+    # Add this method to the VelocityProfileRegistry class
+    def create_hybrid_velocity_profile(self, profile_type='ICA', u_max=1.0, dt=0.01, backend=None, **kwargs):
+        """
+        Create a hybrid Fourier/analytical model velocity profile based on optimized parameters.
+        Compatible with both JAX and WARP backends.
+        
+        Parameters:
+            profile_type: 'ICA' or 'CCA'
+            u_max: Maximum velocity scaling factor
+            dt: Time step for simulation
+            backend: Computing backend
+        
+        Returns:
+            A backend-specific profile function
+        """
+        if backend is None:
+            backend = self.default_backend
+        
+        # Load appropriate model parameters
+        try:
+            if profile_type == 'ICA':
+                from params.ica_model import (
+                    PERIOD, T_MIN, TRANSITION_FRACTION, MODEL_TYPE,
+                    FOURIER_PARAMS, N_HARMONICS
+                )
+                
+                # Load method-specific parameters
+                if 'polynomial' in MODEL_TYPE:
+                    from params.ica_model import POLY_COEFFS
+                    method_params = POLY_COEFFS
+                    method_type = 'polynomial'
+                elif 'exponential' in MODEL_TYPE:
+                    from params.ica_model import EXP_A, EXP_B, EXP_C, EXP_D, EXP_OFFSET
+                    method_params = [EXP_A, EXP_B, EXP_C, EXP_D, EXP_OFFSET]
+                    method_type = 'exponential'
+                elif 'chebyshev' in MODEL_TYPE:
+                    from params.ica_model import CHEBY_COEFFS
+                    method_params = CHEBY_COEFFS
+                    method_type = 'chebyshev'
+                elif 'windkessel' in MODEL_TYPE:
+                    from params.ica_model import WK_A_ADJUSTED, WK_B, WK_C, WK_D, WK_K
+                    method_params = [WK_A_ADJUSTED, WK_B, WK_C, WK_D, WK_K]
+                    method_type = 'windkessel'
+                else:
+                    print(f"Warning: Unknown model type {MODEL_TYPE}, using default")
+                    method_type = 'default'
+                    method_params = []
+                    
+            elif profile_type == 'CCA':
+                from params.cca_model import (
+                    PERIOD, T_MIN, TRANSITION_FRACTION, MODEL_TYPE,
+                    FOURIER_PARAMS, N_HARMONICS
+                )
+                
+                # Load method-specific parameters
+                if 'polynomial' in MODEL_TYPE:
+                    from params.cca_model import POLY_COEFFS
+                    method_params = POLY_COEFFS
+                    method_type = 'polynomial'
+                elif 'exponential' in MODEL_TYPE:
+                    from params.cca_model import EXP_A, EXP_B, EXP_C, EXP_D, EXP_OFFSET
+                    method_params = [EXP_A, EXP_B, EXP_C, EXP_D, EXP_OFFSET]
+                    method_type = 'exponential'
+                elif 'chebyshev' in MODEL_TYPE:
+                    from params.cca_model import CHEBY_COEFFS
+                    method_params = CHEBY_COEFFS
+                    method_type = 'chebyshev'
+                elif 'windkessel' in MODEL_TYPE:
+                    from params.cca_model import WK_A_ADJUSTED, WK_B, WK_C, WK_D, WK_K
+                    method_params = [WK_A_ADJUSTED, WK_B, WK_C, WK_D, WK_K]
+                    method_type = 'windkessel'
+                else:
+                    print(f"Warning: Unknown model type {MODEL_TYPE}, using default")
+                    method_type = 'default'
+                    method_params = []
+            else:
+                raise ValueError(f"Unknown profile type: {profile_type}")
+                
+            print(f"Loaded {profile_type} hybrid model: {MODEL_TYPE}")
+            
+        except ImportError:
+            raise ImportError(f"{profile_type} model not found. Run optimization first to generate the model.")
+    
+        # Store parameters as WARP static types if needed
+        if self.default_precision_policy is not None:
+            u_max_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(u_max))
+            dt_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(dt))
+            period_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(PERIOD))
+            t_min_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(T_MIN))
+            transition_fraction_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(TRANSITION_FRACTION))
+            a0_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(FOURIER_PARAMS[0]))
+        else:
+            u_max_static = wp.static(wp.float32(u_max))
+            dt_static = wp.static(wp.float32(dt))
+            period_static = wp.static(wp.float32(PERIOD))
+            t_min_static = wp.static(wp.float32(T_MIN))
+            transition_fraction_static = wp.static(wp.float32(TRANSITION_FRACTION))
+            a0_static = wp.static(wp.float32(FOURIER_PARAMS[0]))
+        
+        # WARP implementation
+        if method_type == 'polynomial':
+            # Create static versions of polynomial coefficients
+            poly_params_static = []
+            for i in range(min(5, len(method_params))):  # Limit to 5 coefficients for WARP
+                if self.default_precision_policy is not None:
+                    poly_params_static.append(wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[i])))
+                else:
+                    poly_params_static.append(wp.static(wp.float32(method_params[i])))
+            
+            # Pad with zeros if needed
+            while len(poly_params_static) < 5:
+                poly_params_static.append(wp.static(wp.float32(0.0)))
+                
+            @wp.func
+            def hybrid_profile_warp(index: wp.vec3i, timestep: int = 0):
+                # Calculate time with cycle wrapping
+                t_raw = t_min_static + dt_static * wp.float32(timestep)
+                t_shifted = t_raw - t_min_static  # Shift to zero-based
+                cycles = wp.int32(t_shifted / period_static)  # Number of complete cycles
+                t_within_cycle = t_shifted - wp.float32(cycles) * period_static  # Time within current cycle
+                t_cycle = t_within_cycle + t_min_static  # Shift back to original time range
+                
+                # Determine transition point
+                t_transition = t_min_static + transition_fraction_static * period_static
+                
+                # Normalize time for Fourier calculation
+                scaled_period = period_static * transition_fraction_static
+                
+                # First part (Fourier)
+                if t_cycle <= t_transition:
+                    # Fourier series calculation
+                    result = a0_static
+                    
+                    # Manually unroll the Fourier series calculation for first few harmonics
+                    if len(FOURIER_PARAMS) >= 3:
+                        a1 = wp.static(wp.float32(FOURIER_PARAMS[1]))
+                        b1 = wp.static(wp.float32(FOURIER_PARAMS[2]))
+                        result += a1 * wp.cos(2.0*wp.pi*1.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b1 * wp.sin(2.0*wp.pi*1.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    if len(FOURIER_PARAMS) >= 5:
+                        a2 = wp.static(wp.float32(FOURIER_PARAMS[3]))
+                        b2 = wp.static(wp.float32(FOURIER_PARAMS[4]))
+                        result += a2 * wp.cos(2.0*wp.pi*2.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b2 * wp.sin(2.0*wp.pi*2.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    if len(FOURIER_PARAMS) >= 7:
+                        a3 = wp.static(wp.float32(FOURIER_PARAMS[5]))
+                        b3 = wp.static(wp.float32(FOURIER_PARAMS[6]))
+                        result += a3 * wp.cos(2.0*wp.pi*3.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b3 * wp.sin(2.0*wp.pi*3.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    return wp.vec(u_max_static * result, length=1)
+                    
+                # Second part (Polynomial)
+                else:
+                    # Calculate normalized time
+                    t_norm = (t_cycle - t_transition) / (t_min_static + period_static - t_transition)
+                    
+                    # Start with transition value
+                    result = a0_static
+                    
+                    # Manually unroll polynomial calculation
+                    result += poly_params_static[0] * t_norm
+                    result += poly_params_static[1] * t_norm * t_norm
+                    result += poly_params_static[2] * t_norm * t_norm * t_norm
+                    result += poly_params_static[3] * t_norm * t_norm * t_norm * t_norm
+                    result += poly_params_static[4] * t_norm * t_norm * t_norm * t_norm * t_norm
+                    
+                    return wp.vec(u_max_static * result, length=1)
+                    
+        elif method_type == 'exponential':
+            # Extract and convert exponential parameters
+            if self.default_precision_policy is not None:
+                exp_a_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[0]))
+                exp_b_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[1]))
+                exp_c_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[2]))
+                exp_d_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[3]))
+                exp_offset_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[4]))
+            else:
+                exp_a_static = wp.static(wp.float32(method_params[0]))
+                exp_b_static = wp.static(wp.float32(method_params[1]))
+                exp_c_static = wp.static(wp.float32(method_params[2]))
+                exp_d_static = wp.static(wp.float32(method_params[3]))
+                exp_offset_static = wp.static(wp.float32(method_params[4]))
+            
+            @wp.func
+            def hybrid_profile_warp(index: wp.vec3i, timestep: int = 0):
+                # Calculate time with cycle wrapping
+                t_raw = t_min_static + dt_static * wp.float32(timestep)
+                t_shifted = t_raw - t_min_static  # Shift to zero-based
+                cycles = wp.int32(t_shifted / period_static)  # Number of complete cycles
+                t_within_cycle = t_shifted - wp.float32(cycles) * period_static  # Time within current cycle
+                t_cycle = t_within_cycle + t_min_static  # Shift back to original time range
+                
+                # Determine transition point
+                t_transition = t_min_static + transition_fraction_static * period_static
+                
+                # First part (Fourier) - similar to polynomial implementation
+                if t_cycle <= t_transition:
+                    # Similar Fourier implementation (code reuse)
+                    scaled_period = period_static * transition_fraction_static
+                    result = a0_static
+                    
+                    if len(FOURIER_PARAMS) >= 3:
+                        a1 = wp.static(wp.float32(FOURIER_PARAMS[1]))
+                        b1 = wp.static(wp.float32(FOURIER_PARAMS[2]))
+                        result += a1 * wp.cos(2.0*wp.pi*1.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b1 * wp.sin(2.0*wp.pi*1.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    if len(FOURIER_PARAMS) >= 5:
+                        a2 = wp.static(wp.float32(FOURIER_PARAMS[3]))
+                        b2 = wp.static(wp.float32(FOURIER_PARAMS[4]))
+                        result += a2 * wp.cos(2.0*wp.pi*2.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b2 * wp.sin(2.0*wp.pi*2.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    if len(FOURIER_PARAMS) >= 7:
+                        a3 = wp.static(wp.float32(FOURIER_PARAMS[5]))
+                        b3 = wp.static(wp.float32(FOURIER_PARAMS[6]))
+                        result += a3 * wp.cos(2.0*wp.pi*3.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b3 * wp.sin(2.0*wp.pi*3.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    return wp.vec(u_max_static * result, length=1)
+                
+                # Second part (Exponential)
+                else:
+                    # Calculate normalized time
+                    t_norm = (t_cycle - t_transition) / (t_min_static + period_static - t_transition)
+                    
+                    # Double exponential formula
+                    result = exp_a_static * wp.exp(-exp_b_static * t_norm)
+                    result += exp_c_static * wp.exp(-exp_d_static * t_norm) 
+                    result += exp_offset_static
+                    
+                    return wp.vec(u_max_static * result, length=1)
+                    
+        elif method_type == 'windkessel':
+            # Extract and convert Windkessel parameters
+            if self.default_precision_policy is not None:
+                wk_a_adj_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[0]))
+                wk_b_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[1]))
+                wk_c_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[2]))
+                wk_d_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[3]))
+                wk_k_static = wp.static(self.default_precision_policy.store_precision.wp_dtype(method_params[4]))
+            else:
+                wk_a_adj_static = wp.static(wp.float32(method_params[0]))
+                wk_b_static = wp.static(wp.float32(method_params[1]))
+                wk_c_static = wp.static(wp.float32(method_params[2]))
+                wk_d_static = wp.static(wp.float32(method_params[3]))
+                wk_k_static = wp.static(wp.float32(method_params[4]))
+                
+            @wp.func
+            def hybrid_profile_warp(index: wp.vec3i, timestep: int = 0):
+                # Calculate time with cycle wrapping
+                t_raw = t_min_static + dt_static * wp.float32(timestep)
+                t_cycle = t_min_static + wp.fmod(t_raw - t_min_static, period_static)
+                
+                # Determine transition point
+                t_transition = t_min_static + transition_fraction_static * period_static
+                
+                # First part (Fourier)
+                if t_cycle <= t_transition:
+                    # Fourier series calculation
+                    result = a0_static
+                    
+                    # Use static boolean flags instead of dynamic length checks
+                    if wp.static(has_harmonic1):  # Use wp.static to make this a compile-time constant
+                        a1 = wp.static(wp.float32(FOURIER_PARAMS[1]))
+                        b1 = wp.static(wp.float32(FOURIER_PARAMS[2]))
+                        result += a1 * wp.cos(2.0*wp.pi*1.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b1 * wp.sin(2.0*wp.pi*1.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    if wp.static(has_harmonic2):
+                        a2 = wp.static(wp.float32(FOURIER_PARAMS[3]))
+                        b2 = wp.static(wp.float32(FOURIER_PARAMS[4]))
+                        result += a2 * wp.cos(2.0*wp.pi*2.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b2 * wp.sin(2.0*wp.pi*2.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    if wp.static(has_harmonic3):
+                        a3 = wp.static(wp.float32(FOURIER_PARAMS[5]))
+                        b3 = wp.static(wp.float32(FOURIER_PARAMS[6]))
+                        result += a3 * wp.cos(2.0*wp.pi*3.0*(t_cycle-t_min_static)/scaled_period)
+                        result += b3 * wp.sin(2.0*wp.pi*3.0*(t_cycle-t_min_static)/scaled_period)
+                    
+                    return wp.vec(u_max_static * result, length=1)
+                
+                # Second part (Windkessel)
+                else:
+                    # Calculate normalized time
+                    t_norm = (t_cycle - t_transition) / (t_min_static + period_static - t_transition)
+                    
+                    # Windkessel formula: a*exp(-b*t)*(1 + c*sin(d*t + k))
+                    result = wk_a_adj_static * wp.exp(-wk_b_static * t_norm) 
+                    result *= (1.0 + wk_c_static * wp.sin(wk_d_static * t_norm + wk_k_static))
+                    
+                    return wp.vec(u_max_static * result, length=1)
+                    
+        else:
+            # Default/fallback implementation
+            @wp.func
+            def hybrid_profile_warp(index: wp.vec3i, timestep: int = 0):
+                # Simple Fourier calculation with just DC component
+                return wp.vec(u_max_static * a0_static, length=1)
+    
+        # JAX implementation - more flexible since we don't need manual unrolling
+        def hybrid_profile_jax():
+            def velocity(timestep):
+                # Calculate time with cycle wrapping
+                t_raw = T_MIN + dt * timestep
+                t_cycle = T_MIN + jnp.mod(t_raw - T_MIN, PERIOD)
+                
+                # Determine transition point
+                t_transition = T_MIN + TRANSITION_FRACTION * PERIOD
+                
+                # Create the two parts of the function
+                def fourier_part(t):
+                    scaled_period = PERIOD * TRANSITION_FRACTION
+                    result = FOURIER_PARAMS[0]
+                    
+                    for i in range(1, N_HARMONICS + 1):
+                        if 2*i < len(FOURIER_PARAMS):
+                            a = FOURIER_PARAMS[2*i-1]
+                            b = FOURIER_PARAMS[2*i]
+                            result += a * jnp.cos(2*jnp.pi*i*(t-T_MIN)/scaled_period)
+                            result += b * jnp.sin(2*jnp.pi*i*(t-T_MIN)/scaled_period)
+                    
+                    return result
+                
+                def second_part(t):
+                    # Calculate normalized time
+                    t_norm = (t - t_transition) / (T_MIN + PERIOD - t_transition)
+                    
+                    if method_type == 'polynomial':
+                        result = FOURIER_PARAMS[0]  # Start with DC component
+                        for i, coef in enumerate(method_params):
+                            result += coef * (t_norm ** (i+1))
+                        return result
+                    
+                    elif method_type == 'exponential':
+                        a, b, c, d, offset = method_params
+                        return a * jnp.exp(-b * t_norm) + c * jnp.exp(-d * t_norm) + offset
+                    
+                    elif method_type == 'chebyshev':
+                        # JAX-compatible Chebyshev polynomial evaluation
+                        t_cheb = -1 + 2 * t_norm
+                        
+                        # Convert to standard polynomial form for JAX
+                        n = len(method_params)
+                        b_nm2 = 0.0
+                        b_nm1 = 0.0
+                        for i in range(n-1, -1, -1):
+                            b_n = method_params[i] + 2*t_cheb*b_nm1 - b_nm2
+                            b_nm2 = b_nm1
+                            b_nm1 = b_n
+                        
+                        return b_nm1 - t_cheb * b_nm2
+                    
+                    elif method_type == 'windkessel':
+                        a_adj, b, c, d, k = method_params
+                        return a_adj * jnp.exp(-b * t_norm) * (1.0 + c * jnp.sin(d * t_norm + k))
+                    
+                    else:
+                        return FOURIER_PARAMS[0]  # Default to DC component
+                
+                # Combine the two parts using a conditional
+                result = jnp.where(t_cycle <= t_transition, 
+                                 fourier_part(t_cycle), 
+                                 second_part(t_cycle))
+                
+                # Scale by u_max and return as a velocity vector
+                u_x = u_max * result
+                u_y = jnp.zeros_like(u_x) if isinstance(u_x, jnp.ndarray) else 0.0
+                
+                return jnp.array([u_x, u_y])
+            
+            return velocity
+        
+        # Return the appropriate implementation
+        if backend == ComputeBackend.JAX:
+            return hybrid_profile_jax
+        elif backend == ComputeBackend.WARP:
+            return hybrid_profile_warp
 
 if __name__ == "__main__":
     # Import needed XLB components 

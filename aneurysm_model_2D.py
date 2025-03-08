@@ -209,7 +209,7 @@ class AneurysmSimulation2D:
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
 
         # bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
-        bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("ICA"), indices=inlet)
+        bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("hybrid_ica"), indices=inlet)
         # bc_inlet = ZouHeBC("velocity", prescribed_value=(0.0, self.u_max), indices=inlet)
         
         # Outlet: zero-gradient outflow
