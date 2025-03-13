@@ -1,5 +1,6 @@
 from aneurysm_model_2D import AneurysmSimulation2D
 from xlb import ComputeBackend, PrecisionPolicy
+from load_csv import load_csv_data
 import xlb
 
 def aneurysm_simulation_setup(
@@ -11,10 +12,13 @@ def aneurysm_simulation_setup(
     dynamic_viscosity=0.0035,
     blood_density=1056,
     dt=5e-7,
-    u_max=0.04,
-    fps=100
+    fps=100,
+    flow_profile=None
 ) -> AneurysmSimulation2D:
     """Setup aneurysm simulation with configurable parameters"""
+
+    # Post-processing interval
+    post_process_interval = max(1, int(1 / (fps * dt)))
     
     # Convert mm to meters
     mm_to_m = 0.001
@@ -50,6 +54,19 @@ def aneurysm_simulation_setup(
 
     # Calculate relaxation parameter
     dx = resolution_m
+    
+    # Calculate appropriate dt for stability based on resolution
+    # Using CFL condition and diffusion stability
+    # Source: Krüger et al. (2017) - The Lattice Boltzmann Method: Principles and Practice
+    # dt_max = 0.2 * dx**2 / kinematic_viscosity
+    
+    # # Warn if provided dt exceeds stability limit
+    # if dt > dt_max:
+    #     print(f"WARNING: Provided dt={dt} exceeds stability limit dt_max={dt_max}")
+    #     print(f"Automatically adjusting dt to {dt_max}")
+    #     dt = dt_max
+    
+    # Use consistent dt for all calculations
     nu_lbm = kinematic_viscosity * dt / (dx**2)
     omega = 1.0 / (3 * nu_lbm + 0.5)
     
@@ -57,8 +74,7 @@ def aneurysm_simulation_setup(
     tau = 1/omega
     assert 0.5 <= tau <= 2.0, f"Tau value {tau:.3f} out of stable range [0.5, 2.0]"
     
-    # Post-processing interval
-    post_process_interval = max(1, int(1 / (fps * dt)))
+    
     
     # Create input parameters dictionary
     input_params = {
@@ -69,7 +85,6 @@ def aneurysm_simulation_setup(
         "resolution_mm": resolution_mm,
         "kinematic_viscosity": kinematic_viscosity,
         "dt": dt,
-        "u_max": u_max,
         "dx": dx,
         "fps": fps,
         "vessel_length_lu": grid_x,
@@ -78,7 +93,8 @@ def aneurysm_simulation_setup(
         "bulge_vertical_lu": bulge_vertical_lu,
         "vessel_centre_lu": vessel_centre_lu,
         "bulge_centre_x_lu": grid_x // 2,
-        "bulge_centre_y_lu": vessel_centre_lu + (grid_y // 2)
+        "bulge_centre_y_lu": vessel_centre_lu + (grid_y // 2),
+        "flow_profile": flow_profile
     }
     
     # Create simulation
@@ -94,7 +110,74 @@ def aneurysm_simulation_setup(
     
     return simulation, post_process_interval
 
+def run_for_duration(simulation, duration_seconds, dt, post_process_interval=None):
+    """Run simulation for a specific duration in seconds.
+    
+    Args:
+        simulation: The simulation object
+        duration_seconds: How long to run in physical time (seconds)
+        dt: Time step size (seconds)
+        post_process_interval: Steps between post-processing
+        
+    Returns:
+        The total number of steps executed
+    """
+    # Calculate number of steps needed for this duration
+    num_steps = int(round(duration_seconds / dt))
+    
+    print(f"Running simulation for {duration_seconds:.4f} seconds")
+    print(f"Time step: {dt:.2e} seconds")
+    print(f"Total steps: {num_steps:,}")
+    
+    # Run the simulation
+    simulation.run(num_steps, post_process_interval=post_process_interval)
+    
+    return num_steps
+
+# Update your main block to use this function
 if __name__ == "__main__":
+
+    # Load CSV files
+    flow_profile_data = load_csv_data()
+
+ # Add an option for "None"
+    print("Available flow profiles:")
+    print("0: None (default to sinusoidal with 1Hz oscillation)")
+    for i, file_name in enumerate(flow_profile_data.keys(), start=1):
+        print(f"{i}: {file_name}")
+    
+    selected_index = int(input("Select a flow profile by index: "))
+    
+    if selected_index == 0:
+        print("Defaulting to sinusoidal with 1Hz oscillation")
+        flow_profile = {'name': 'Sinusoidal_1Hz', 'data': None}
+    else:
+        selected_profile = list(flow_profile_data.keys())[selected_index - 1]
+        selected_data = flow_profile_data[selected_profile]
+        
+        # Ask user to select x and y columns
+        print("Available columns:")
+        for i, col_name in enumerate(selected_data['y'].keys()):
+            print(f"{i}: {col_name}")
+        
+        x_col = selected_data['x']
+        y_col_index = int(input("Select a y column by index: "))
+        y_col_name = list(selected_data['y'].keys())[y_col_index]
+        y_col = selected_data['y'][y_col_name]
+        
+        # Include profile name and selected column name
+        profile_name = f"{selected_profile}_{y_col_name}"
+        print(f"Using flow profile: {profile_name}")
+        
+        flow_profile = {
+            'name': profile_name,
+            'data': {'x': x_col, 'y': y_col}
+        }
+
+    import warp as wp
+    wp.clear_kernel_cache()     # Clear kernel cache to avoid conflicts with new kernel code
+
+    dt = 1e-6  # Time step size (seconds)
     # Create simulation with realistic vessel parameters
     simulation, post_process_interval = aneurysm_simulation_setup(
         vessel_length_mm=10,         # 10mm vessel length
@@ -104,15 +187,21 @@ if __name__ == "__main__":
         resolution_mm=0.01,          # 0.01mm resolution
         dynamic_viscosity=0.0035,    # Blood dynamic viscosity (Pa·s)
         blood_density=1056,          # Blood density (kg/m³)
-        dt=5e-7,                     # Time step
-        u_max=0.04,                  # More realistic blood velocity TODO: remove in place for a better flow model
-        fps=1000                     # Output frames per second
+        dt=dt,                       # Time step
+        fps=100,                     # Output frames per second
+        flow_profile=flow_profile    # Pass selected flow profile with name
     )
     
-    # Run simulation
-    # TODO: add or change to run for a set duration rather than a set number of steps
-    simulation.run(150000, post_process_interval=post_process_interval)
+    # Run simulation 
+    run_for_duration(
+        simulation=simulation, 
+        duration_seconds=1.0,  # Adjust this value as needed
+        dt=dt,
+        post_process_interval=post_process_interval
+    )
 
+    # simulation.run(150000, post_process_interval=post_process_interval)
+    
     # TODO:
     # look into the post_process method to see if it can be modified to save the results in a more useful format
     # this includes extraction of blood vessel features such as wall shear stress, velocity profiles, etc.

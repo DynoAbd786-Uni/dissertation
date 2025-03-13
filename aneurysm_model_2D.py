@@ -18,7 +18,8 @@ from pathlib import Path
 import jax
 
 from custom_time_depenadant_zouhe_bc_class import TimeDependentZouHeBC
-from velocity_profiles import VelocityProfileRegistry
+from csv_velocity_bc import CSVVelocityZouHeBC
+# from velocity_profiles import VelocityProfileRegistry
 
 
 MM_TO_M = 0.001
@@ -33,7 +34,7 @@ class AneurysmSimulation2D:
         )
 
         # Start velocity profile manager
-        self.velocity_profiles = VelocityProfileRegistry(default_backend=backend, default_precision_policy=precision_policy)
+        # self.velocity_profiles = VelocityProfileRegistry(default_backend=backend, default_precision_policy=precision_policy)
 
         # Store input parameters
         self.input_params = input_params
@@ -43,13 +44,18 @@ class AneurysmSimulation2D:
         self.precision_policy = precision_policy
         self.omega = omega
         self.resolution = resolution
-        self.u_max = input_params["u_max"]
+        self.u_max = 1.0
         self.dt = input_params["dt"]
         self.dx = input_params["dx"]
         self.boundary_conditions = []
         self.current_dt = 1.0
 
-         # Setup output directories
+        # Pop flow profile from the dict after saving to class
+        self.flow_profile = self.input_params.pop("flow_profile")
+        self.flow_profile_name = self.flow_profile.get("name", "Sinusoidal (default)")
+
+
+        # Setup output directories
         self.output_dir = Path("aneurysm_simulation")
         self.vtk_dir = self.output_dir / "vtk"
         self.img_dir = self.output_dir / "images"
@@ -173,6 +179,23 @@ class AneurysmSimulation2D:
                     array_upper_right + 
                     array_lower)
 
+
+
+        ####### OVERRIDE #######
+        # No buldge, just a pipe
+        array_upper = [loc_upper for i in range(x)]
+
+        wall_width = (wall_width_lower +
+                    wall_width_lower)
+        
+        wall_height = (array_upper + 
+                    array_lower)
+
+
+
+
+
+
         # Format for XLB
         walls = [wall_width, wall_height]
         
@@ -206,15 +229,42 @@ class AneurysmSimulation2D:
         bc_walls = FullwayBounceBackBC(indices=walls)
         
         # Inlet: constant velocity profile
+        self.u_max = 0.01
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
+        
+        # Inlet: use our new direct BC
+        from direct_bc import DirectTimeDependentBC
+        bc_inlet = DirectTimeDependentBC(
+            bc_type="velocity",
+            indices=inlet,
+            dt=self.dt,
+            dx=self.dx,
+            u_max=0.04,
+            # flow_profile=self.flow_profile,
+            frequency=1.0
+        )
+
 
         # bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
-        bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("ICA"), indices=inlet)
+        # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("ICA"), indices=inlet)
         # bc_inlet = ZouHeBC("velocity", prescribed_value=(0.0, self.u_max), indices=inlet)
+        # bc_inlet = CSVVelocityZouHeBC(bc_type="velocity", 
+        #                               csv_filepath="params/velocity_profile_normalized.csv", 
+        #                               column_name="ICA",
+        #                               speed_multiplier=self.u_max,
+        #                               dx=self.dx,
+        #                               dt=self.dt,
+        #                               vessel_radius_mm=self.input_params["vessel_diameter_mm"] / 2,
+        #                               compute_backend=ComputeBackend.WARP,
+        #                               indices=inlet)
+        
+        # self.u_max = bc_inlet.u_max
+        # print("u_max:", self.u_max)
         
         # Outlet: zero-gradient outflow
         bc_outlet = ExtrapolationOutflowBC(indices=outlet)
         
+        # self.boundary_conditions = [bc_inlet]
         self.boundary_conditions = [bc_walls, bc_inlet, bc_outlet]
 
     def setup_stepper(self):
@@ -225,18 +275,48 @@ class AneurysmSimulation2D:
             collision_type="BGK"
         )     
     
+    
+
+    # def bc_profile(self, time):
+    #     time = wp.static(self.precision_policy.store_precision.wp_dtype(time))
+    #     u_max = wp.static(self.precision_policy.store_precision.wp_dtype(self.u_max))
+    #     dt = wp.static(self.precision_policy.store_precision.wp_dtype(self.dt))
+    #     omega = wp.static(self.precision_policy.store_precision.wp_dtype(2.0 * np.pi))
+
+    #     @wp.func
+    #     def bc_profile_warp(index: wp.vec3i):  # Optional timestep parameter
+    #         # Calculate time from actual timestep
+    #         t = dt * wp.float32(time)
+    #         # Sinusoidal velocity with positive offset
+    #         u_x = u_max * (0.5 + 0.5 * wp.sin(omega * t))
+    #         return wp.vec(u_x, length=1)
+
+    #     def bc_profile_jax():
+    #         def velocity(time):
+    #             t = self.dt * time
+    #             u_x = self.u_max * (0.5 + 0.5 * jnp.sin(omega * t))
+    #             u_y = jnp.zeros_like(u_x)
+    #             return jnp.array([u_x, u_y])
+    #         return velocity
+
+    #     if self.backend == ComputeBackend.JAX:
+    #         return bc_profile_jax
+    #     elif self.backend == ComputeBackend.WARP:
+    #         return bc_profile_warp
+
 
     def bc_profile(self):
         u_max = wp.static(self.precision_policy.store_precision.wp_dtype(self.u_max))
         dt = wp.static(self.precision_policy.store_precision.wp_dtype(self.dt))
-        omega = wp.static(self.precision_policy.store_precision.wp_dtype(2.0 * np.pi * 12345))
+        omega = wp.static(self.precision_policy.store_precision.wp_dtype(2.0 * np.pi * 20))
 
         @wp.func
-        def bc_profile_warp(index: wp.vec3i, timestep: int = 0):  # Optional timestep parameter
+        def bc_profile_warp(index: wp.vec3i, timestep: wp.int32=10):  # Optional timestep parameter
             # Calculate time from actual timestep
             t = dt * wp.float32(timestep)
             # Sinusoidal velocity with positive offset
-            u_x = u_max * (1.5 + 1.5 * wp.sin(omega * t))
+            # u_x = u_max * (0.5 + 0.5 * wp.sin(omega * t))
+            u_x = u_max * 0.5 * t
             return wp.vec(u_x, length=1)
 
         def bc_profile_jax():
@@ -321,7 +401,10 @@ class AneurysmSimulation2D:
 
     def run(self, num_steps, post_process_interval=100):
         """Run simulation with detailed performance tracking"""
-        
+
+        # At the start of your run method
+        print(f"Starting simulation with backend: {self.backend}")
+        print(f"Boundary conditions: {[type(bc).__name__ for bc in self.boundary_conditions]}")
         # Initialize timing variables
         start_time = time.time()
         last_sim_step_time = start_time
@@ -334,7 +417,14 @@ class AneurysmSimulation2D:
         step_times = []
         mlups_history = []
         
-        for i in range(num_steps):
+        for i in range(num_steps + 1):
+
+            # # update bc profile
+            # self.bc_inlet = self.bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(time=i), indices=self.inlet)
+            # self.bc_mask, self.missing_mask = self.stepper._process_boundary_conditions([self.bc_inlet], self.bc_mask, self.missing_mask)
+            # self.f_0, self.f_1 = self.stepper._initialize_auxiliary_data([self.bc_inlet], self.f_0, self.f_1, self.bc_mask, self.missing_mask)
+
+
             # Update timestep for time-dependent boundary conditions
             for bc in self.boundary_conditions:
                 if hasattr(bc, 'update_timestep'):
@@ -439,8 +529,14 @@ class AneurysmSimulation2D:
         rho = rho[:, 1:-1, 1:-1]
         u = u[:, 1:-1, 1:-1]
         u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
+        u_magnitude_physical = u_magnitude * (self.dx/self.dt)
 
-        fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
+        fields = {
+            "rho": rho[0], 
+            "u_x": u[0] * (self.dx/self.dt), 
+            "u_y": u[1] * (self.dx/self.dt), 
+            "u_magnitude": u_magnitude_physical
+        }
 
         # Save VTK file in vtk subdirectory
         vtk_path = self.vtk_dir
@@ -449,7 +545,7 @@ class AneurysmSimulation2D:
         # Save image with fixed colorbar range in images subdirectory
         # Use theoretical maximum velocity as upper bound
         vmin = 0.0
-        vmax = self.input_params["u_max"] * 3  # 50% margin above inlet velocity
+        vmax = 0.1 * 1.5 
         print(f"Saving image with vmin={vmin}, vmax={vmax}")
         print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
         print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))
@@ -483,7 +579,7 @@ class AneurysmSimulation2D:
                 "vessel_width": self.grid_shape[1] * self.resolution,
                 "resolution": self.resolution,
                 "kinematic_viscosity": self.input_params["kinematic_viscosity"],
-                "max_velocity": self.u_max,
+                "max_velocity": float(self.u_max),
                 "dt": self.dt,
                 "dx": self.dx,
                 "fps": self.input_params["fps"]

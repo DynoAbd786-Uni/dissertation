@@ -341,70 +341,101 @@ class VelocityProfileRegistry:
             # Generate a name for this profile
             profile_name = col_name if use_column_names else f"csv_profile_{len(profile_names)}"
             
-            # Create the profile factory - passing raw data instead of WARP arrays
-            def create_csv_profile(time_data=time_clean.tolist(), 
-                                 velocity_data=velocity_clean.tolist(),
-                                 t_min=min_time,
-                                 t_max=max_time, 
-                                 cycle_len=cycle_length,
-                                 dt=dt,
-                                 backend=None):
-                """Factory function for CSV-based profile"""
+            # Pre-compute a fixed-size lookup table for WARP compatibility
+            # Use a reasonable number of points (adjust as needed)
+            NUM_POINTS = 100  # Maximum number of points WARP can handle statically
+            
+            # If we have more than NUM_POINTS, resample to reduce the size
+            if len(time_clean) > NUM_POINTS:
+                # Create evenly spaced points across the time range
+                t_table = np.linspace(min_time, max_time, NUM_POINTS)
+                v_table = np.interp(t_table, time_clean, velocity_clean)
+            else:
+                # Use the original data if it's already small enough
+                t_table = time_clean
+                v_table = velocity_clean
+                NUM_POINTS = len(time_clean)
+            
+            # Pre-calculate time and velocity values as static constants
+            t_values = [float(t) for t in t_table]
+            v_values = [float(v) for v in v_table]
+            
+            # Create profile factory with constant arrays
+            def create_csv_profile(table_size=NUM_POINTS, 
+                                t_values=t_values,
+                                v_values=v_values,
+                                t_min=min_time,
+                                t_max=max_time, 
+                                cycle_len=cycle_length,
+                                dt=dt,
+                                backend=None):
+                """Factory function for CSV-based profile with static lookup table"""
                 
-                # WARP implementation using pre-computed values
+                # Convert to static WARP values
+                t_min_static = wp.static(wp.float32(t_min))
+                cycle_len_static = wp.static(wp.float32(cycle_len))
+                dt_static = wp.static(wp.float32(dt))
+                
+                # Create WARP arrays from the Python lists - this is crucial!
+                # These arrays are created at registration time, not kernel execution time
+                t_array = wp.array(t_values, dtype=wp.float32, device="cpu")
+                v_array = wp.array(v_values, dtype=wp.float32, device="cpu")
+                
+                # Define the WARP function using the arrays
                 @wp.func
                 def csv_profile_warp(index: wp.vec3i, timestep: int = 0):
-                    """WARP implementation using linear interpolation"""
-                    # Current time from timestep
-                    t_raw = wp.float32(timestep) * wp.float32(dt)
+                    """WARP implementation using lookup table with interpolation"""
+                    # Calculate current time with cycle wrapping
+                    t_raw = wp.float32(timestep) * dt_static
                     
-                    # Make cyclic by modulo with cycle length using manual mod calculation
-                    # First shift to zero-based
-                    t_shifted = t_raw - wp.float32(t_min)
+                    # Calculate time within cycle
+                    t_shifted = t_raw - t_min_static
+                    cycles = wp.int32(t_shifted / cycle_len_static)
+                    t_cycle = t_shifted - wp.float32(cycles) * cycle_len_static + t_min_static
                     
-                    # Calculate modulo using division and floor
-                    # t_cycle = t_shifted - wp.float32(cycle_len) * wp.float(int(t_shifted / cycle_len))
-                    # For simplicity, let's use a different approach
+                    # Special cases - before or after range
+                    if t_cycle <= t_min_static:
+                        return wp.vec(v_array[0], length=1)
+                        
+                    if t_cycle >= t_min_static + cycle_len_static:
+                        return wp.vec(v_array[table_size-1], length=1)
                     
-                    # Compute whole cycles completed
-                    cycles = wp.int32(t_shifted / wp.float32(cycle_len))
+                    # Find where in the cycle we are
+                    # Simple approach: use a constant for bounds
+                    result = v_array[0]  # Default to first value
                     
-                    # Compute time within current cycle
-                    t_within_cycle = t_shifted - wp.float32(cycles) * wp.float32(cycle_len)
+                    # Map t_cycle to a position in the array
+                    alpha = (t_cycle - t_min_static) / cycle_len_static
+                    position = alpha * wp.float32(table_size - 1)
                     
-                    # Shift back to original time range
-                    t_cycle = t_within_cycle + wp.float32(t_min)
+                    # Find indices for interpolation
+                    idx_low = wp.int32(position)
+                    idx_high = idx_low + 1
                     
-                    # Default result
-                    u_x = wp.float32(velocity_data[0])
+                    # Clamp indices to valid range
+                    if idx_high >= table_size:
+                        idx_high = table_size - 1
+                        
+                    # Interpolation factor
+                    frac = position - wp.float32(idx_low)
                     
-                    # Simple linear search through time data points
-                    for i in range(len(time_data) - 1):
-                        if wp.float32(time_data[i]) <= t_cycle and t_cycle < wp.float32(time_data[i+1]):
-                            # Linear interpolation
-                            t0 = wp.float32(time_data[i])
-                            t1 = wp.float32(time_data[i+1])
-                            v0 = wp.float32(velocity_data[i])
-                            v1 = wp.float32(velocity_data[i+1])
-                            
-                            alpha = (t_cycle - t0) / (t1 - t0)
-                            u_x = v0 + alpha * (v1 - v0)
-                            break
-                    
-                    return wp.vec(u_x, length=1)
+                    # Linear interpolation between points
+                    if idx_high < table_size:
+                        result = v_array[idx_low] * (1.0 - frac) + v_array[idx_high] * frac
+                    else:
+                        result = v_array[idx_low]  # Use last value if at the end
+                        
+                    return wp.vec(result, length=1)
                 
-                # JAX implementation
+                # JAX implementation unchanged
                 def csv_profile_jax():
                     """JAX implementation of the CSV profile"""
-                    # Create JAX arrays for interpolation
-                    x_jax = jnp.array(time_data)
-                    y_jax = jnp.array(velocity_data)
+                    x_jax = jnp.array(time_clean)
+                    y_jax = jnp.array(velocity_clean)
                     
                     def velocity(timestep):
                         t_raw = dt * timestep
-                        # Make cyclic by modulo with cycle length
                         t_cycle = jnp.mod(t_raw - t_min, cycle_len) + t_min
-                        # Interpolate to get velocity
                         u_x = jnp.interp(t_cycle, x_jax, y_jax)
                         u_y = jnp.zeros_like(u_x) if isinstance(u_x, jnp.ndarray) else 0.0
                         return jnp.array([u_x, u_y])
@@ -417,11 +448,11 @@ class VelocityProfileRegistry:
                 elif backend == ComputeBackend.WARP:
                     return csv_profile_warp
             
-            # Add function to the registry
+            # Add function to the registry with closure over the current data
             self.register(profile_name, create_csv_profile, 
-                         f"CSV-based cyclic velocity profile from column '{col_name}'")
+                        f"CSV-based cyclic velocity profile from column '{col_name}'")
             profile_names.append(profile_name)
-            
+                
             print(f"Registered cyclic profile '{profile_name}' from CSV column '{col_name}'")
         
         return profile_names
@@ -541,3 +572,21 @@ if __name__ == "__main__":
         plt.tight_layout()
         plt.savefig("carotid_profiles_processed.png", dpi=300)
         plt.show()
+
+@wp.func
+def get_normal_vectors(missing_mask: Any):
+    # Add debug print to see what normals are being calculated
+    result = _u_vec(0.0, 0.0)  # Default in case nothing matches
+    
+    if wp.static(_d == 3):
+        for l in range(_q):
+            if missing_mask[l] == wp.uint8(1) and wp.abs(_c[0, l]) + wp.abs(_c[1, l]) + wp.abs(_c[2, l]) == 1:
+                result = -_u_vec(_c_float[0, l], _c_float[1, l], _c_float[2, l])
+                break
+    else:
+        for l in range(_q):
+            if missing_mask[l] == wp.uint8(1) and wp.abs(_c[0, l]) + wp.abs(_c[1, l]) == 1:
+                result = -_u_vec(_c_float[0, l], _c_float[1, l])
+                break
+    
+    return result
