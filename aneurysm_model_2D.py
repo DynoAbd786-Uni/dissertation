@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import jax
 
+
 from custom_time_depenadant_zouhe_bc_class import TimeDependentZouHeBC
 from csv_velocity_bc import CSVVelocityZouHeBC
 # from velocity_profiles import VelocityProfileRegistry
@@ -81,6 +82,7 @@ class AneurysmSimulation2D:
 
     def _setup(self):
         self.setup_boundary_conditions()
+        # wait for boundary conditions to be set up
         self.setup_stepper()
         # Initialize fields using the stepper
         self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
@@ -225,6 +227,20 @@ class AneurysmSimulation2D:
     def setup_boundary_conditions(self):
         inlet, outlet, walls = self.define_boundary_indices()
         
+        # Inlet: use our new direct BC
+        from direct_bc import DirectTimeDependentBC
+        from constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
+        bc_inlet = DirectTimeDependentBC(
+            bc_type="velocity",
+            indices=inlet,
+            dt=self.dt,
+            dx=self.dx,
+            u_max=0.04,
+            flow_profile=self.flow_profile,
+            frequency=1.0
+        )
+
+
         # Walls: no-slip boundary condition
         bc_walls = FullwayBounceBackBC(indices=walls)
         
@@ -232,17 +248,12 @@ class AneurysmSimulation2D:
         self.u_max = 0.01
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
         
-        # Inlet: use our new direct BC
-        from direct_bc import DirectTimeDependentBC
-        bc_inlet = DirectTimeDependentBC(
-            bc_type="velocity",
-            indices=inlet,
-            dt=self.dt,
-            dx=self.dx,
-            u_max=0.04,
-            # flow_profile=self.flow_profile,
-            frequency=1.0
-        )
+        # print(Y_VALUES_1)
+        # print(Y_VALUES_2)
+        # print(Y_VALUES_3)
+        # print(Y_VALUES_4)
+        
+        
 
 
         # bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)

@@ -8,7 +8,7 @@ from typing import Any
 from functools import partial
 from jax import jit, lax
 from xlb.operator.equilibrium import QuadraticEquilibrium
-from scipy.interpolate import interp1d
+
 
 class DirectTimeDependentBC(BoundaryCondition):
     """
@@ -19,19 +19,7 @@ class DirectTimeDependentBC(BoundaryCondition):
     def __init__(self, dt, dx, u_max, frequency, flow_profile=None,
                  bc_type="velocity", indices=None,
                  **kwargs):  # Keep kwargs for parent class
-        """Initialize the DirectTimeDependentBC class
-        
-        Args:
-            bc_type: Must be 'velocity' for this BC
-            indices: Boundary indices
-            dt: Time step size (default: 0.00005)
-            dx: Spatial step size (default: 0.0001)
-            u_max: Maximum velocity (default: 0.04)
-            frequency: Oscillation frequency in Hz (default: 1.0)
-            flow_profile: Optional dictionary with flow profile data
-                         {'name': profile_name, 'data': {'x': time_array, 'y': velocity_array}}
-            **kwargs: Optional parameters
-        """
+        """Initialize the DirectTimeDependentBC class"""
         # Verify bc_type is supported
         assert bc_type == "velocity", "DirectTimeDependentBC only supports 'velocity' type boundary conditions"
         self.bc_type = bc_type
@@ -43,39 +31,21 @@ class DirectTimeDependentBC(BoundaryCondition):
         self.frequency = frequency
         self.u_max = self.u_max_physical * (self.dt/self.dx)
         
-        # Add equilibrium operator like ZouHeBC
-        self.equilibrium_operator = QuadraticEquilibrium()
-        
-        # Call parent constructor with proper implementation step
-        super().__init__(
-            ImplementationStep.STREAMING,  # Same as ZouHeBC
-            indices=indices,
-            **kwargs
-        )
-
-        # Print all parameters
-        # print(f"Created DirectTimeDependentBC with:")
-        # print(f"  dt={self.dt}, dx={self.dx}")
-        # print(f"  u_max_physical={self.u_max_physical} m/s (physical)")
-        # print(f"  u_max_lattice={self.u_max} LU (lattice)")
-        # print(f"  freq={self.frequency} Hz (physical)")
-        # print(f"  One oscillation should take {1.0/(self.frequency*self.dt):,.0f} timesteps")
-        
-        
-        # Set needs_aux flags like ZouHeBC
-        self.needs_aux_init = True
-        self.needs_aux_recovery = True
-        self.num_of_aux_data = 1  # One aux data for velocity
-        self.needs_padding = True
-
-        # Store flow profile data if supplied
-        self.flow_profile = flow_profile
+        # Initialize variables BEFORE super().__init__
         self.use_csv_profile = False
         self.profile_times = None
         self.profile_velocities = None
-        self.interpolator = None
         self.profile_period = None
+        self.times_device = None
+        self.velocities_device = None
+        self.num_points = 0
+        self.period = 0.0
         
+        # Add equilibrium operator like ZouHeBC
+        self.equilibrium_operator = QuadraticEquilibrium()
+        
+        # Process flow profile data
+        self.flow_profile = flow_profile
         if flow_profile is not None and isinstance(flow_profile, dict) and 'name' in flow_profile:
             self.profile_name = flow_profile['name']
             
@@ -85,38 +55,41 @@ class DirectTimeDependentBC(BoundaryCondition):
                 self.profile_times = self.flow_profile_data['x']
                 self.profile_velocities = self.flow_profile_data['y']
                 
-                # Create interpolator for velocity values
+                # Set flag to use CSV profile
                 self.use_csv_profile = True
                 
                 # Calculate period (duration) of the flow profile
                 self.profile_period = float(self.profile_times[-1] - self.profile_times[0])
                 
-                # Create interpolator (cyclic/periodic)
-                # We'll handle the periodicity in the kernel
-                self.interpolator = interp1d(
-                    self.profile_times, 
-                    self.profile_velocities,
-                    bounds_error=False,
-                    fill_value=(self.profile_velocities[0], self.profile_velocities[-1])
-                )
-                
                 # Find max velocity in profile for normalization
                 self.profile_max_vel = np.max(np.abs(self.profile_velocities))
-                
-                print(f"Using CSV flow profile: {self.profile_name}")
-                print(f"  Profile duration: {self.profile_period:.4f} seconds")
-                print(f"  Profile max velocity: {self.profile_max_vel:.4f}")
-                print(f"  Profile points: {len(self.profile_times)}")
             else:
-                print(f"Using sinusoidal flow profile: {self.profile_name}")
                 self.flow_profile_data = None
         else:
             self.profile_name = "Sinusoidal_1Hz"
             self.flow_profile_data = None
-            print(f"Using default sinusoidal flow profile")
         
-        # Upload flow profile data to device if using CSV
+        # --- NOW call super().__init__ after all variables are defined ---
+        super().__init__(
+            ImplementationStep.STREAMING,  # Same as ZouHeBC
+            indices=indices,
+            **kwargs
+        )
+
+        # --- After super().__init__ ---
+        # Set needs_aux flags like ZouHeBC
+        self.needs_aux_init = True
+        self.needs_aux_recovery = True
+        self.num_of_aux_data = 1  # One aux data for velocity
+        self.needs_padding = True
+        
+        # Upload flow profile data to device if using CSV (AFTER super().__init__)
         if self.use_csv_profile:
+            print(f"Using CSV flow profile: {self.profile_name}")
+            print(f"  Profile duration: {self.profile_period:.4f} seconds")
+            print(f"  Profile max velocity: {self.profile_max_vel:.4f}")
+            print(f"  Profile points: {len(self.profile_times)}")
+            
             # Convert to float32 arrays for warp
             times = self.profile_times.astype(np.float32)
             velocities = self.profile_velocities.astype(np.float32)
@@ -125,14 +98,16 @@ class DirectTimeDependentBC(BoundaryCondition):
             self.times_device = wp.array(times, dtype=wp.float32)
             self.velocities_device = wp.array(velocities, dtype=wp.float32)
             self.num_points = wp.int32(len(times))
-            self.period = wp.float32(self.profile_period)            
+            self.period = wp.float32(self.profile_period)
+        else:
+            print(f"Using sinusoidal flow profile: {self.profile_name}")
         
-        # print(f"Created DirectTimeDependentBC with dt={self.dt}, u_max={self.u_max}, freq={self.frequency}")
-        # print(f"BC ID: {self.id}")
-        
+    # Modify _construct_warp to accept a pre-calculated velocity
     def _construct_warp(self):
+
+        from constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
+        
         """Construct the WARP kernel and functional"""
-        # Set local constants
         _d = self.velocity_set.d
         _q = self.velocity_set.q
         _u_vec = wp.vec(_d, dtype=self.compute_dtype)
@@ -144,6 +119,15 @@ class DirectTimeDependentBC(BoundaryCondition):
         _dt = wp.static(self.compute_dtype(self.dt))
         _u_max = wp.static(self.compute_dtype(self.u_max))
         _omega = wp.static(self.compute_dtype(2.0 * np.pi * self.frequency))
+
+        # Using formulas or extrapolation
+        _use_csv_profile = wp.static(wp.int32(int(self.use_csv_profile)))
+        _y1 = wp.static(Y_VALUES_1)
+        _y2 = wp.static(Y_VALUES_2)
+        _y3 = wp.static(Y_VALUES_3)
+        _y4 = wp.static(Y_VALUES_4)
+
+        print(_y1)
         
         # Helper functions copied from ZouHe
         @wp.func
@@ -187,10 +171,115 @@ class DirectTimeDependentBC(BoundaryCondition):
             return a - b * wp.floor(a / b)
         
         @wp.func
+        def interpolate_flow_profile(normalized_time: wp.float32) -> wp.float32:
+            """
+            Interpolate flow profile from 4 4x4 matrices of preloaded values
+            
+            Args:
+                normalized_time: Time value between 0-1 representing position in the 1-second cycle
+                
+            Returns:
+                Interpolated velocity value
+            """
+            # Step 1: Scale to 0-63 range (64 points)
+            # Input time is 0-1, so multiply by 63 to get the float index
+            float_index = normalized_time * 63.0
+            
+            # Step 2: Find the indices to interpolate between
+            lower_idx = wp.min(wp.int32(float_index), 62)  # Ensure we don't go out of bounds
+            upper_idx = wp.min(lower_idx + 1, 63)
+            
+            # Step 3: Calculate interpolation factor (0-1) between the two points
+            factor = float_index - wp.float32(lower_idx)
+            
+            # Step 4: Get the matrix and location for each index
+            # Matrix 1: indices 0-15
+            # Matrix 2: indices 16-31
+            # Matrix 3: indices 32-47
+            # Matrix 4: indices 48-63
+            
+            # For lower index
+            lower_value = wp.float32(0.0)
+            if lower_idx < 16:
+                # Use Y_VALUES_1
+                row = lower_idx // 4
+                col = lower_idx % 4
+                lower_value = Y_VALUES_1[row, col]
+            elif lower_idx < 32:
+                # Use Y_VALUES_2
+                row = (lower_idx - 16) // 4
+                col = (lower_idx - 16) % 4
+                lower_value = Y_VALUES_2[row, col]
+            elif lower_idx < 48:
+                # Use Y_VALUES_3
+                row = (lower_idx - 32) // 4
+                col = (lower_idx - 32) % 4
+                lower_value = Y_VALUES_3[row, col]
+            else:
+                # Use Y_VALUES_4
+                row = (lower_idx - 48) // 4
+                col = (lower_idx - 48) % 4
+                lower_value = Y_VALUES_4[row, col]
+                
+            # For upper index
+            upper_value = wp.float32(0.0)
+            if upper_idx < 16:
+                # Use Y_VALUES_1
+                row = upper_idx // 4
+                col = upper_idx % 4
+                upper_value = Y_VALUES_1[row, col]
+            elif upper_idx < 32:
+                # Use Y_VALUES_2
+                row = (upper_idx - 16) // 4
+                col = (upper_idx - 16) % 4
+                upper_value = Y_VALUES_2[row, col]
+            elif upper_idx < 48:
+                # Use Y_VALUES_3
+                row = (upper_idx - 32) // 4
+                col = (upper_idx - 32) % 4
+                upper_value = Y_VALUES_3[row, col]
+            else:
+                # Use Y_VALUES_4
+                row = (upper_idx - 48) // 4
+                col = (upper_idx - 48) % 4
+                upper_value = Y_VALUES_4[row, col]
+                
+            # Step 5: Perform linear interpolation
+            return lower_value + factor * (upper_value - lower_value)
+
+        # Add helper functions for getting values from matrices
+        @wp.func
+        def get_matrix_value(index: wp.int32) -> wp.float32:
+            """Helper to get a value from the appropriate matrix based on index"""
+            if index < 16:
+                row = index // 4
+                col = index % 4
+                return Y_VALUES_1[row, col]
+            elif index < 32:
+                row = (index - 16) // 4
+                col = (index - 16) % 4
+                return Y_VALUES_2[row, col]
+            elif index < 48:
+                row = (index - 32) // 4
+                col = (index - 32) % 4
+                return Y_VALUES_3[row, col]
+            else:
+                row = (index - 48) // 4
+                col = (index - 48) % 4
+                return Y_VALUES_4[row, col]
+
+        @wp.func
+        def sinusoidal_flow(t: wp.float32) -> wp.float32:
+            """Calculate sinusoidal flow velocity at time t"""
+            # Keep angle within [0, 2π] range for numerical stability
+            angle = fmod(_omega * t, wp.float32(2.0 * wp.pi))
+            return _u_max * (0.5 + 0.5 * wp.sin(angle))
+        
+        @wp.func
         def time_dependent_velocity_functional(
             index: Any,
-            timestep: Any,
-            _missing_mask: Any,
+            timestep: Any,   
+            _missing_mask: Any,     
             f_pre: Any,
             f_post: Any,
             _f_pre: Any,
@@ -209,12 +298,27 @@ class DirectTimeDependentBC(BoundaryCondition):
             # Calculate time-dependent velocity
             t = _dt * wp.float32(timestep)
             
-            # Keep angle within [0, 2π] range for numerical stability
-            angle = fmod(_omega * t, wp.float32(2.0 * wp.pi))
+            
             # if timestep % 1000 == 0 and index[0] == 0 and index[1] == 5:
             #     wp.printf("[DirectBC] t=%f, omega*t=%f, angle=%f\n", t, _omega * t, angle)
             
-            prescribed_velocity = _u_max * (wp.float32(0.5) + wp.float32(0.5) * wp.sin(angle))
+            if _use_csv_profile == 1:
+                # Normalize time to 0-1 range (1-second cycle)
+                normalized_time = fmod(t, wp.float32(1.0))
+                
+                # Use our custom interpolation function
+                prescribed_velocity = interpolate_flow_profile(normalized_time)
+                
+                # Scale by maximum velocity
+                # prescribed_velocity = _u_max * 
+                
+                # Debug print occasionally
+                if timestep % 10000 == 0 and index[0] == 0 and index[1] == 5:
+                    wp.printf("[DirectBC] t=%f, normalized_time=%f, csv_velocity=%f\n", 
+                             t, normalized_time, prescribed_velocity)
+            else:
+                # Use sinusoidal flow profile
+                prescribed_velocity = sinusoidal_flow(t)
             
             # Print debug info occasionally
             # if timestep % 1000 == 0 and index[0] == 0 and index[1] == 5:
@@ -261,7 +365,8 @@ class DirectTimeDependentBC(BoundaryCondition):
         # Default timestep if not provided
         if timestep is None:
             timestep = 0
-        
+
+
         # Launch the kernel with timestep parameter
         wp.launch(
             self.warp_kernel,

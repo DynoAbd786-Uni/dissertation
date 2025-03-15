@@ -2,6 +2,10 @@ from aneurysm_model_2D import AneurysmSimulation2D
 from xlb import ComputeBackend, PrecisionPolicy
 from load_csv import load_csv_data
 import xlb
+import warp as wp
+from constants import load_profile_values
+import numpy as np
+
 
 def aneurysm_simulation_setup(
     vessel_length_mm=10,
@@ -42,6 +46,33 @@ def aneurysm_simulation_setup(
     
     # Simulation parameters
     backend = ComputeBackend.WARP
+    # This isnt really a good move
+    # Preload selected CSV data for flow profile if warp selected
+    if backend == ComputeBackend.WARP and flow_profile is not None and flow_profile.get('data') is not None:
+        # Extract the pre-converted y data (already in lattice units)
+        selected_profile_data_y = flow_profile['data']["y"]
+        
+        # Verify data is normalized and has 64 points
+        if len(selected_profile_data_y) != 64:
+            print(f"WARNING: Profile data has {len(selected_profile_data_y)} points, expected 64.")
+            # Could add resampling here if needed
+        
+        # Get min/max for debug info
+        min_val = np.min(selected_profile_data_y)
+        max_val = np.max(selected_profile_data_y)
+        print(f"Loading profile data into matrices: min={min_val:.6f} LU, max={max_val:.6f} LU")
+        
+        # Load the values into the 4 mat44 matrices
+        load_profile_values(selected_profile_data_y)
+        # from constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
+        # print(Y_VALUES_1)
+        # print(Y_VALUES_2)
+        # print(Y_VALUES_3)
+        # print(Y_VALUES_4)
+        
+        
+
+
     precision_policy = PrecisionPolicy.FP32FP32
     
     velocity_set = xlb.velocity_set.D2Q9(
@@ -134,13 +165,23 @@ def run_for_duration(simulation, duration_seconds, dt, post_process_interval=Non
     
     return num_steps
 
-# Update your main block to use this function
+
 if __name__ == "__main__":
+    dt = 1e-5  # Time step size (seconds)
+    resolution_mm = 0.01  # 0.01mm resolution
+    resolution_m = resolution_mm * 0.001  # Convert to meters
+    vessel_diameter_mm = 2  # 2mm vessel diameter
 
-    # Load CSV files
-    flow_profile_data = load_csv_data()
+    # Load CSV files - now with dx and dt parameters for lattice unit conversion
+    flow_profile_data = load_csv_data(
+        vessel_radius_mm=vessel_diameter_mm/2,  # Convert diameter to radius
+        dx=resolution_mm,                        # Pass grid spacing
+        dt=dt,                                  # Pass time step
+        resample_points=64,                     # Ensure exactly 64 points
+        normalize_time=True                     # Normalize time to 1 second
+    )
 
- # Add an option for "None"
+    # Add an option for "None"
     print("Available flow profiles:")
     print("0: None (default to sinusoidal with 1Hz oscillation)")
     for i, file_name in enumerate(flow_profile_data.keys(), start=1):
@@ -154,8 +195,9 @@ if __name__ == "__main__":
     else:
         selected_profile = list(flow_profile_data.keys())[selected_index - 1]
         selected_data = flow_profile_data[selected_profile]
+        print(selected_data)
         
-        # Ask user to select x and y columns
+        # Ask user to select y columns
         print("Available columns:")
         for i, col_name in enumerate(selected_data['y'].keys()):
             print(f"{i}: {col_name}")
@@ -165,26 +207,33 @@ if __name__ == "__main__":
         y_col_name = list(selected_data['y'].keys())[y_col_index]
         y_col = selected_data['y'][y_col_name]
         
-        # Include profile name and selected column name
+        # Include profile name, selected column name, and units
         profile_name = f"{selected_profile}_{y_col_name}"
-        print(f"Using flow profile: {profile_name}")
+        units = selected_data.get('units', 'unknown')
+        print(f"Using flow profile: {profile_name} (units: {units})")
         
+        # Verify we have lattice units
+        if units != "LU/step":
+            print("WARNING: Flow profile not in lattice units. Values may be incorrectly scaled.")
+            
         flow_profile = {
             'name': profile_name,
             'data': {'x': x_col, 'y': y_col}
         }
 
+
+    print(flow_profile)
+
     import warp as wp
     wp.clear_kernel_cache()     # Clear kernel cache to avoid conflicts with new kernel code
 
-    dt = 1e-6  # Time step size (seconds)
     # Create simulation with realistic vessel parameters
     simulation, post_process_interval = aneurysm_simulation_setup(
         vessel_length_mm=10,         # 10mm vessel length
-        vessel_diameter_mm=2,        # 2mm vessel diameter (typical cerebral artery)
+        vessel_diameter_mm=vessel_diameter_mm,        # 2mm vessel diameter (typical cerebral artery)
         bulge_horizontal_mm=6,       # 6mm horizontal bulge
         bulge_vertical_mm=4,         # 4mm vertical bulge
-        resolution_mm=0.01,          # 0.01mm resolution
+        resolution_mm=resolution_mm,          # resolution
         dynamic_viscosity=0.0035,    # Blood dynamic viscosity (Pa·s)
         blood_density=1056,          # Blood density (kg/m³)
         dt=dt,                       # Time step
