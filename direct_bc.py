@@ -31,7 +31,7 @@ class DirectTimeDependentBC(BoundaryCondition):
         self.frequency = frequency
         self.u_max = self.u_max_physical * (self.dt/self.dx)
         
-        # Initialize variables BEFORE super().__init__
+        # Initialize variables for flow profile data
         self.use_csv_profile = False
         self.profile_times = None
         self.profile_velocities = None
@@ -379,3 +379,180 @@ class DirectTimeDependentBC(BoundaryCondition):
         """Initialize with constant velocity (timestep 0)"""
         self.is_initialized_with_aux_data = True
         return f_0, f_1
+    
+
+    @partial(jit, static_argnums=(0,), inline=True)
+    def _get_known_middle_mask(self, missing_mask):
+        known_mask = missing_mask[self.velocity_set.opp_indices]
+        middle_mask = ~(missing_mask | known_mask)
+        return known_mask, middle_mask
+
+    @partial(jit, static_argnums=(0,), inline=True)
+    def _get_normal_vec(self, missing_mask):
+        main_c = self.velocity_set.c[:, self.velocity_set.main_indices]
+        m = missing_mask[self.velocity_set.main_indices]
+        normals = -jnp.tensordot(main_c, m, axes=(-1, 0))
+        return normals
+    
+    @partial(jit, static_argnums=(0, 2, 3), inline=True)
+    def _broadcast_prescribed_values(self, prescribed_values, prescribed_values_shape, target_shape):
+        """
+        Broadcasts `prescribed_values` to `target_shape` following specific rules:
+
+        - If `prescribed_values_shape` is (2, 1) or (3, 1) (for constant profiles),
+          broadcast along the last 2 or 3 dimensions of `target_shape` respectively.
+        - For other shapes, identify mismatched dimensions and broadcast only in that direction.
+        """
+        # Determine the number of dimensions to match
+        num_dims_prescribed = len(prescribed_values_shape)
+        num_dims_target = len(target_shape)
+
+        if num_dims_prescribed > num_dims_target:
+            raise ValueError("prescribed_values has more dimensions than target_shape")
+
+        # Insert singleton dimensions after the first dimension to match target_shape
+        if num_dims_prescribed < num_dims_target:
+            # Number of singleton dimensions to add
+            num_singleton = num_dims_target - num_dims_prescribed
+
+            if num_dims_prescribed == 0:
+                # If prescribed_values is scalar, reshape to all singleton dimensions
+                prescribed_values_shape = (1,) * num_dims_target
+            else:
+                # Insert singleton dimensions after the first dimension
+                prescribed_values_shape = (prescribed_values_shape[0], *(1,) * num_singleton, *prescribed_values_shape[1:])
+                prescribed_values = prescribed_values.reshape(prescribed_values_shape)
+
+        # Create broadcast shape based on the rules
+        broadcast_shape = []
+        for pv_dim, tgt_dim in zip(prescribed_values_shape, target_shape):
+            if pv_dim == 1 or pv_dim == tgt_dim:
+                broadcast_shape.append(tgt_dim)
+            else:
+                raise ValueError(f"Cannot broadcast dimension {pv_dim} to {tgt_dim}")
+
+        return jnp.broadcast_to(prescribed_values, target_shape)
+    
+    @partial(jit, static_argnums=(0,), inline=True)
+    def get_rho(self, fpop, missing_mask):
+        if self.bc_type == "velocity":
+            target_shape = (self.velocity_set.d,) + fpop.shape[1:]
+            vel = self._broadcast_prescribed_values(self.prescribed_values, self.prescribed_values.shape, target_shape)
+            rho = self.calculate_rho(fpop, vel, missing_mask)
+        elif self.bc_type == "pressure":
+            rho = self.prescribed_values
+        else:
+            raise ValueError(f"type = {self.bc_type} not supported! Use 'pressure' or 'velocity'.")
+        return rho
+
+    @partial(jit, static_argnums=(0,), inline=True)
+    def get_vel(self, fpop, missing_mask):
+        if self.bc_type == "velocity":
+            target_shape = (self.velocity_set.d,) + fpop.shape[1:]
+            vel = self._broadcast_prescribed_values(self.prescribed_values, self.prescribed_values.shape, target_shape)
+        elif self.bc_type == "pressure":
+            rho = self.prescribed_values
+            vel = self.calculate_vel(fpop, rho, missing_mask)
+        else:
+            raise ValueError(f"type = {self.bc_type} not supported! Use 'pressure' or 'velocity'.")
+        return vel
+    
+    @partial(jit, static_argnums=(0,), inline=True)
+    def calculate_vel(self, fpop, rho, missing_mask):
+        """
+        Calculate velocity based on the prescribed pressure/density (Zou/He BC)
+        """
+
+        normals = self._get_normal_vec(missing_mask)
+        known_mask, middle_mask = self._get_known_middle_mask(missing_mask)
+        fsum = jnp.sum(fpop * middle_mask, axis=0, keepdims=True) + 2.0 * jnp.sum(fpop * known_mask, axis=0, keepdims=True)
+        unormal = -1.0 + fsum / rho
+
+        # Return the above unormal as a normal vector which sets the tangential velocities to zero
+        vel = unormal * normals
+        return vel
+
+    @partial(jit, static_argnums=(0,), inline=True)
+    def calculate_rho(self, fpop, vel, missing_mask):
+        """
+        Calculate density based on the prescribed velocity (Zou/He BC)
+        """
+        normals = self._get_normal_vec(missing_mask)
+        known_mask, middle_mask = self._get_known_middle_mask(missing_mask)
+        unormal = jnp.sum(normals * vel, keepdims=True, axis=0)
+        fsum = jnp.sum(fpop * middle_mask, axis=0, keepdims=True) + 2.0 * jnp.sum(fpop * known_mask, axis=0, keepdims=True)
+        rho = fsum / (1.0 + unormal)
+        return rho
+    
+    @partial(jit, static_argnums=(0,), inline=True)
+    def calculate_equilibrium(self, f_post, missing_mask):
+        """
+        This is the ZouHe method of calculating the missing macroscopic variables at the boundary.
+        """
+        rho = self.get_rho(f_post, missing_mask)
+        vel = self.get_vel(f_post, missing_mask)
+
+        feq = self.equilibrium_operator(rho, vel)
+        return feq
+
+    @partial(jit, static_argnums=(0,), inline=True)
+    def bounceback_nonequilibrium(self, fpop, feq, missing_mask):
+        """
+        Calculate unknown populations using bounce-back of non-equilibrium populations
+        a la original Zou & He formulation
+        """
+        opp = self.velocity_set.opp_indices
+        fknown = fpop[opp] + feq - feq[opp]
+        fpop = jnp.where(missing_mask, fknown, fpop)
+        return fpop
+    
+    @partial(jit, static_argnums=(0))
+    def _get_velocity_jax(self, timestep):
+        """Calculate velocity at given timestep"""
+        t = self.dt * timestep
+
+        print(t)
+        
+        if self.use_csv_profile:
+            # Normalize time to profile period
+            t_normalized = t % self.profile_period
+            
+            # Find indices to interpolate between
+            idx = jnp.searchsorted(jnp.array(self.profile_times), t_normalized) - 1
+            idx = jnp.clip(idx, 0, len(self.profile_times) - 2)
+            
+            # Linear interpolation
+            t0, t1 = self.profile_times[idx], self.profile_times[idx + 1]
+            v0, v1 = self.profile_velocities[idx], self.profile_velocities[idx + 1]
+            weight = (t_normalized - t0) / (t1 - t0)
+            
+            velocity = v0 + weight * (v1 - v0)
+            return velocity * self.u_max
+        else:
+            # Simple sinusoidal flow
+            angle = (2.0 * jnp.pi * self.frequency * t) % (2.0 * jnp.pi)
+            return self.u_max * (0.5 + 0.5 * jnp.sin(angle))
+
+    @Operator.register_backend(ComputeBackend.JAX)
+    @partial(jit, static_argnums=(0))
+    def jax_implementation(self, f_pre, f_post, bc_mask, missing_mask, timestep=None):
+        # Default timestep if not provided
+        if timestep is None:
+            timestep = 0
+        
+        # Update prescribed_values for this timestep
+        velocity = self._get_velocity_jax(timestep)
+        
+        # Convert scalar velocity to vector using normals
+        normals = self._get_normal_vec(missing_mask)
+        self.prescribed_values = velocity * normals
+        
+        # Rest of implementation remains the same
+        boundary = bc_mask == self.id
+        new_shape = (self.velocity_set.q,) + boundary.shape[1:]
+        boundary = lax.broadcast_in_dim(boundary, new_shape, tuple(range(self.velocity_set.d + 1)))
+
+        feq = self.calculate_equilibrium(f_post, missing_mask)
+        f_post_bd = self.bounceback_nonequilibrium(f_post, feq, missing_mask)
+        f_post = jnp.where(boundary, f_post_bd, f_post)
+        return f_post

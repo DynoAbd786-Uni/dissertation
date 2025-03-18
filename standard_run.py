@@ -168,14 +168,14 @@ def run_for_duration(simulation, duration_seconds, dt, post_process_interval=Non
 
 if __name__ == "__main__":
     dt = 1e-5  # Time step size (seconds)
-    resolution_mm = 0.01  # 0.01mm resolution
+    resolution_mm = 0.05  # 0.01mm resolution
     resolution_m = resolution_mm * 0.001  # Convert to meters
-    vessel_diameter_mm = 2  # 2mm vessel diameter
+    vessel_diameter_mm = 6.5  # Male Common Carotid Artery size. Source https://www.ahajournals.org/doi/10.1161/01.STR.0000206440.48756.f7
 
     # Load CSV files - now with dx and dt parameters for lattice unit conversion
     flow_profile_data = load_csv_data(
         vessel_radius_mm=vessel_diameter_mm/2,  # Convert diameter to radius
-        dx=resolution_mm,                        # Pass grid spacing
+        dx=resolution_m,                        # Pass grid spacing
         dt=dt,                                  # Pass time step
         resample_points=64,                     # Ensure exactly 64 points
         normalize_time=True                     # Normalize time to 1 second
@@ -229,10 +229,10 @@ if __name__ == "__main__":
 
     # Create simulation with realistic vessel parameters
     simulation, post_process_interval = aneurysm_simulation_setup(
-        vessel_length_mm=10,         # 10mm vessel length
+        vessel_length_mm=15,         # 10mm vessel length
         vessel_diameter_mm=vessel_diameter_mm,        # 2mm vessel diameter (typical cerebral artery)
-        bulge_horizontal_mm=6,       # 6mm horizontal bulge
-        bulge_vertical_mm=4,         # 4mm vertical bulge
+        bulge_horizontal_mm=12,       # 6mm horizontal bulge
+        bulge_vertical_mm=8,         # 4mm vertical bulge
         resolution_mm=resolution_mm,          # resolution
         dynamic_viscosity=0.0035,    # Blood dynamic viscosity (Pa·s)
         blood_density=1056,          # Blood density (kg/m³)

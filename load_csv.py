@@ -33,7 +33,9 @@ def load_csv_data(vessel_radius_mm=None, dx=None, dt=None, plot=False, normalize
                     },
                     'original_duration': float,  # Original time span in seconds
                     'original_points': int,      # Original number of data points
-                    'units': str                 # Units of the y values
+                    'units': str,                # Units of the y values
+                    'max_velocity': float,       # Maximum velocity in m/s before lattice conversion
+                    'max_lattice_velocity': float,       # Maximum velocity in lattice units per step
                 },
                 'file2': {
                     ...
@@ -83,7 +85,9 @@ def load_csv_data(vessel_radius_mm=None, dx=None, dt=None, plot=False, normalize
         if normalize_time:
             print(f"Normalizing time for {file_name} from {original_duration:.4f}s to 1.0s")
         
-        # Process y values
+        # Process y values and keep track of max velocity
+        max_velocity = 0.0
+        
         if vessel_radius_mm is not None:
             vessel_radius_m = vessel_radius_mm * 0.001
             cross_section_area = math.pi * vessel_radius_m**2
@@ -97,11 +101,28 @@ def load_csv_data(vessel_radius_mm=None, dx=None, dt=None, plot=False, normalize
                     raw_values = df[column].to_numpy()
                     velocity_values = raw_values * conversion_factor
                     file_data['y'][column] = velocity_values
-                    print(f"  Column {column}: min={velocity_values.min():.4f} m/s, max={velocity_values.max():.4f} m/s")
+                    
+                    # Store maximum velocity before lattice unit conversion
+                    col_max = np.max(velocity_values)
+                    if col_max > max_velocity:
+                        max_velocity = col_max
+                        
+                    print(f"  Column {column}: min={velocity_values.min():.4f} m/s, max={col_max:.4f} m/s")
         else:
+            # If we don't have vessel radius, we're still in flow rate units
             for column in df.columns:
                 if column != x_column:
-                    file_data['y'][column] = df[column].to_numpy()
+                    flow_values = df[column].to_numpy()
+                    file_data['y'][column] = flow_values
+                    
+                    # Store maximum flow rate
+                    col_max = np.max(flow_values)
+                    if col_max > max_velocity:
+                        max_velocity = col_max
+        
+        # Store the max velocity/flow rate in the file_data
+        file_data['max_velocity'] = max_velocity
+        file_data['max_lattice_velocity'] = max_velocity * conversion_factor if conversion_factor else None
         
         # Convert to lattice units if dx and dt are provided
         if dx is not None and dt is not None:
@@ -109,6 +130,10 @@ def load_csv_data(vessel_radius_mm=None, dx=None, dt=None, plot=False, normalize
             file_data['units'] = 'LU/step'
             print(f"Converting velocity to lattice units with dx={dx} m and dt={dt} s")
             print(f"Conversion factor: {conversion_factor:.6e}")
+            
+            # Store max lattice velocity
+            file_data['max_lattice_velocity'] = max_velocity * conversion_factor
+            
             for column in file_data['y']:
                 file_data['y'][column] *= conversion_factor
                 print(f"  Column {column}: min={file_data['y'][column].min():.4f} LU/step, max={file_data['y'][column].max():.4f} LU/step")
@@ -131,6 +156,9 @@ def load_csv_data(vessel_radius_mm=None, dx=None, dt=None, plot=False, normalize
             plt.legend()
             plt.grid(True)
             plt.show()
+        
+        # Optional: Print the maximum velocity information
+        print(f"Maximum {'velocity' if vessel_radius_mm else 'flow rate'}: {max_velocity:.4f} {'m/s' if vessel_radius_mm else 'ml/s'}")
     
     return result
 

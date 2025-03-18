@@ -17,9 +17,8 @@ import os
 from pathlib import Path
 import jax
 
-
-from custom_time_depenadant_zouhe_bc_class import TimeDependentZouHeBC
-from csv_velocity_bc import CSVVelocityZouHeBC
+from direct_bc import DirectTimeDependentBC
+from timestep_stepper import INSETimestepStepper
 # from velocity_profiles import VelocityProfileRegistry
 
 
@@ -45,15 +44,16 @@ class AneurysmSimulation2D:
         self.precision_policy = precision_policy
         self.omega = omega
         self.resolution = resolution
-        self.u_max = 1.0
+        
         self.dt = input_params["dt"]
         self.dx = input_params["dx"]
         self.boundary_conditions = []
-        self.current_dt = 1.0
 
         # Pop flow profile from the dict after saving to class
         self.flow_profile = self.input_params.pop("flow_profile")
         self.flow_profile_name = self.flow_profile.get("name", "Sinusoidal (default)")
+
+        self.u_max = self.flow_profile.get("max_velocity", 0.4)   # Default max velocity is 0.4 m/s
 
 
         # Setup output directories
@@ -206,7 +206,6 @@ class AneurysmSimulation2D:
         x_array_left = [0 for i in range(loc_lower + 1, loc_upper)]
         x_array_right = [x - 1 for i in range(loc_lower + 1, loc_upper)]
         y_array = [i for i in range(loc_lower + 1, loc_upper)]
-
         inlet = [x_array_left, y_array]
         outlet = [x_array_right, y_array]
 
@@ -227,15 +226,13 @@ class AneurysmSimulation2D:
     def setup_boundary_conditions(self):
         inlet, outlet, walls = self.define_boundary_indices()
         
-        # Inlet: use our new direct BC
-        from direct_bc import DirectTimeDependentBC
-        from constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
+        # Inlet: use new direct BC
         bc_inlet = DirectTimeDependentBC(
             bc_type="velocity",
             indices=inlet,
             dt=self.dt,
             dx=self.dx,
-            u_max=0.04,
+            u_max=self.u_max,
             flow_profile=self.flow_profile,
             frequency=1.0
         )
@@ -245,7 +242,6 @@ class AneurysmSimulation2D:
         bc_walls = FullwayBounceBackBC(indices=walls)
         
         # Inlet: constant velocity profile
-        self.u_max = 0.01
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
         
         # print(Y_VALUES_1)
@@ -279,13 +275,20 @@ class AneurysmSimulation2D:
         self.boundary_conditions = [bc_walls, bc_inlet, bc_outlet]
 
     def setup_stepper(self):
-        self.stepper = IncompressibleNavierStokesStepper(
+        # self.stepper = IncompressibleNavierStokesStepper(
+        #     omega=self.omega,
+        #     grid=self.grid,
+        #     boundary_conditions=self.boundary_conditions,
+        #     collision_type="BGK"
+        # )     
+
+        # New custom stepper with timestep support
+        self.stepper = INSETimestepStepper(
             omega=self.omega,
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
             collision_type="BGK"
-        )     
-    
+        )
     
 
     # def bc_profile(self, time):
@@ -326,8 +329,8 @@ class AneurysmSimulation2D:
             # Calculate time from actual timestep
             t = dt * wp.float32(timestep)
             # Sinusoidal velocity with positive offset
-            # u_x = u_max * (0.5 + 0.5 * wp.sin(omega * t))
-            u_x = u_max * 0.5 * t
+            u_x = u_max * (0.5 + 0.5 * wp.sin(omega * t))
+            # u_x = u_max * 0.5 * t
             return wp.vec(u_x, length=1)
 
         def bc_profile_jax():
@@ -556,7 +559,7 @@ class AneurysmSimulation2D:
         # Save image with fixed colorbar range in images subdirectory
         # Use theoretical maximum velocity as upper bound
         vmin = 0.0
-        vmax = 0.1 * 1.5 
+        vmax = self.u_max * 1.5     # 50% margin max velocity
         print(f"Saving image with vmin={vmin}, vmax={vmax}")
         print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
         print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))
