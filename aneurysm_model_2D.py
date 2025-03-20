@@ -250,15 +250,6 @@ class AneurysmSimulation2D:
         # bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("ICA"), indices=inlet)
         # bc_inlet = ZouHeBC("velocity", prescribed_value=(0.0, self.u_max), indices=inlet)
-        # bc_inlet = CSVVelocityZouHeBC(bc_type="velocity", 
-        #                               csv_filepath="params/velocity_profile_normalized.csv", 
-        #                               column_name="ICA",
-        #                               speed_multiplier=self.u_max,
-        #                               dx=self.dx,
-        #                               dt=self.dt,
-        #                               vessel_radius_mm=self.input_params["vessel_diameter_mm"] / 2,
-        #                               compute_backend=ComputeBackend.WARP,
-        #                               indices=inlet)
         
         # self.u_max = bc_inlet.u_max
         # print("u_max:", self.u_max)
@@ -555,6 +546,8 @@ class AneurysmSimulation2D:
         # Use theoretical maximum velocity as upper bound
         vmin = 0.0
         vmax = self.u_max * 1.5     # 50% margin max velocity
+        print(self.u_max)
+        print(self.dx, self.dt, self.dx/self.dt)
         print(f"Saving image with vmin={vmin}, vmax={vmax}")
         print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
         print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))

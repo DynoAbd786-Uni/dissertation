@@ -45,7 +45,7 @@ def aneurysm_simulation_setup(
     vessel_centre_lu = grid_y // 2
     
     # Simulation parameters
-    backend = ComputeBackend.WARP
+    backend = ComputeBackend.JAX
     # This isnt really a good move
     # Preload selected CSV data for flow profile if warp selected
     if backend == ComputeBackend.WARP and flow_profile is not None and flow_profile.get('data') is not None:
@@ -64,14 +64,6 @@ def aneurysm_simulation_setup(
         
         # Load the values into the 4 mat44 matrices
         load_profile_values(selected_profile_data_y)
-        # from constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
-        # print(Y_VALUES_1)
-        # print(Y_VALUES_2)
-        # print(Y_VALUES_3)
-        # print(Y_VALUES_4)
-        
-        
-
 
     precision_policy = PrecisionPolicy.FP32FP32
     

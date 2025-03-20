@@ -40,6 +40,7 @@ class DirectTimeDependentBC(BoundaryCondition):
         self.velocities_device = None
         self.num_points = 0
         self.period = 0.0
+        self.jax_profile_times = None
         
         # Add equilibrium operator like ZouHeBC
         self.equilibrium_operator = QuadraticEquilibrium()
@@ -54,6 +55,11 @@ class DirectTimeDependentBC(BoundaryCondition):
                 self.flow_profile_data = flow_profile['data']
                 self.profile_times = self.flow_profile_data['x']
                 self.profile_velocities = self.flow_profile_data['y']
+
+
+                self.jax_profile_times = jnp.array(self.profile_times)
+                self.jax_profile_velocities = jnp.array(self.profile_velocities)
+
                 
                 # Set flag to use CSV profile
                 self.use_csv_profile = True
@@ -510,24 +516,22 @@ class DirectTimeDependentBC(BoundaryCondition):
     def _get_velocity_jax(self, timestep):
         """Calculate velocity at given timestep"""
         t = self.dt * timestep
-
-        print(t)
         
         if self.use_csv_profile:
             # Normalize time to profile period
             t_normalized = t % self.profile_period
             
             # Find indices to interpolate between
-            idx = jnp.searchsorted(jnp.array(self.profile_times), t_normalized) - 1
-            idx = jnp.clip(idx, 0, len(self.profile_times) - 2)
+            idx = jnp.searchsorted(self.jax_profile_times, t_normalized) - 1
+            idx = jnp.clip(idx, 0, len(self.jax_profile_times) - 2)
             
             # Linear interpolation
-            t0, t1 = self.profile_times[idx], self.profile_times[idx + 1]
-            v0, v1 = self.profile_velocities[idx], self.profile_velocities[idx + 1]
+            t0, t1 = self.jax_profile_times[idx], self.jax_profile_times[idx + 1]
+            v0, v1 = self.jax_profile_velocities[idx], self.jax_profile_velocities[idx + 1]
             weight = (t_normalized - t0) / (t1 - t0)
             
             velocity = v0 + weight * (v1 - v0)
-            return velocity * self.u_max
+            return velocity
         else:
             # Simple sinusoidal flow
             angle = (2.0 * jnp.pi * self.frequency * t) % (2.0 * jnp.pi)
