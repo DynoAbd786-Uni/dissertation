@@ -103,7 +103,7 @@ class TimeDependentZouHeBC(ZouHeBC):
             omega = 2.0 * np.pi * 20.0
             t = dt * timestep
             expected_vel = 0.04 * (0.5 + 0.5 * np.sin(omega * t))
-            # print(f"Updating BC timestep to {timestep} (t={t:.6f}s)")
+           # print(f"Updating BC timestep to {timestep} (t={t:.6f}s)")
             # print(f"Expected velocity: {expected_vel:.6f}")
             
             # Verify the WARP array was updated

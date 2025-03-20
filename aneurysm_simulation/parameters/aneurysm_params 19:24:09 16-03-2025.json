@@ -1,0 +1,71 @@
+{
+    "input_parameters": {
+        "vessel_length_mm": 15,
+        "vessel_diameter_mm": 6.5,
+        "bulge_horizontal_mm": 12,
+        "bulge_vertical_mm": 8,
+        "resolution_mm": 0.05,
+        "kinematic_viscosity": 3.3143939393939395e-06,
+        "dt": 1e-05,
+        "dx": 5e-05,
+        "fps": 100,
+        "vessel_length_lu": 300,
+        "vessel_diameter_lu": 130,
+        "bulge_horizontal_lu": 240,
+        "bulge_vertical_lu": 80,
+        "vessel_centre_lu": 65,
+        "bulge_centre_x_lu": 150,
+        "bulge_centre_y_lu": 130
+    },
+    "physical": {
+        "vessel_length": 15.05,
+        "vessel_width": 10.55,
+        "resolution": 0.05,
+        "kinematic_viscosity": 3.3143939393939395e-06,
+        "max_velocity": 0.4,
+        "dt": 1e-05,
+        "dx": 5e-05,
+        "fps": 100
+    },
+    "numerical": {
+        "grid_shape": [
+            301,
+            211
+        ],
+        "omega": 1.8526315789473684,
+        "tau": 0.5397727272727273,
+        "backend": "ComputeBackend.WARP",
+        "precision_policy": "PrecisionPolicy.FP32FP32",
+        "velocity_set": "D2Q9",
+        "total_nodes": 63511,
+        "final_generation_time_s": 1.0
+    },
+    "metadata": {
+        "timestamp": "2025-03-16T19:24:09.539479",
+        "hostname": "abdua786-Inspiron-16-7610",
+        "output_directories": {
+            "vtk": "aneurysm_simulation/vtk",
+            "images": "aneurysm_simulation/images",
+            "parameters": "aneurysm_simulation/parameters"
+        }
+    },
+    "performance": {
+        "timing": {
+            "total_runtime": "0:00:16",
+            "simulation_time": "0:00:10",
+            "post_processing_time": "0:00:06"
+        },
+        "performance_metrics": {
+            "average_mlups": 628.03,
+            "peak_mlups": 1048.76,
+            "minimum_mlups": 0.02,
+            "average_step_time_ms": 0.101,
+            "average_post_process_time_s": 0.066
+        },
+        "execution_stats": {
+            "total_steps": 100000,
+            "post_process_calls": 101,
+            "steps_per_post_process": 990
+        }
+    }
+}

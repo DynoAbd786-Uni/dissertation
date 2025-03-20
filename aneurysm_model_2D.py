@@ -244,11 +244,6 @@ class AneurysmSimulation2D:
         # Inlet: constant velocity profile
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
         
-        # print(Y_VALUES_1)
-        # print(Y_VALUES_2)
-        # print(Y_VALUES_3)
-        # print(Y_VALUES_4)
-        
         
 
 
