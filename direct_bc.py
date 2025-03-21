@@ -10,7 +10,7 @@ from jax import jit, lax
 from xlb.operator.equilibrium import QuadraticEquilibrium
 
 
-class DirectTimeDependentBC(BoundaryCondition):
+class TimeDependentZouHeBC(BoundaryCondition):
     """
     A time-dependent velocity boundary condition that follows ZouHeBC's structure
     but adds time dependence to the velocity.
@@ -128,12 +128,7 @@ class DirectTimeDependentBC(BoundaryCondition):
 
         # Using formulas or extrapolation
         _use_csv_profile = wp.static(wp.int32(int(self.use_csv_profile)))
-        _y1 = wp.static(Y_VALUES_1)
-        _y2 = wp.static(Y_VALUES_2)
-        _y3 = wp.static(Y_VALUES_3)
-        _y4 = wp.static(Y_VALUES_4)
 
-        print(_y1)
         
         # Helper functions copied from ZouHe
         @wp.func
@@ -319,9 +314,9 @@ class DirectTimeDependentBC(BoundaryCondition):
                 # prescribed_velocity = _u_max * 
                 
                 # Debug print occasionally
-                if timestep % 10000 == 0 and index[0] == 0 and index[1] == 5:
-                    wp.printf("[DirectBC] t=%f, normalized_time=%f, csv_velocity=%f\n", 
-                             t, normalized_time, prescribed_velocity)
+                # if timestep % 10000 == 0 and index[0] == 0 and index[1] == 5:
+                #     wp.printf("[DirectBC] t=%f, normalized_time=%f, csv_velocity=%f\n", 
+                #              t, normalized_time, prescribed_velocity)
             else:
                 # Use sinusoidal flow profile
                 prescribed_velocity = sinusoidal_flow(t)

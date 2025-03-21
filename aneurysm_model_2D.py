@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import jax
 
-from direct_bc import DirectTimeDependentBC
+from direct_bc import TimeDependentZouHeBC
 from timestep_stepper import INSETimestepStepper
 # from velocity_profiles import VelocityProfileRegistry
 
@@ -32,9 +32,6 @@ class AneurysmSimulation2D:
             default_backend=backend,
             default_precision_policy=precision_policy,
         )
-
-        # Start velocity profile manager
-        # self.velocity_profiles = VelocityProfileRegistry(default_backend=backend, default_precision_policy=precision_policy)
 
         # Store input parameters
         self.input_params = input_params
@@ -185,16 +182,13 @@ class AneurysmSimulation2D:
 
         ####### OVERRIDE #######
         # No buldge, just a pipe
-        array_upper = [loc_upper for i in range(x)]
+        # array_upper = [loc_upper for i in range(x)]
 
-        wall_width = (wall_width_lower +
-                    wall_width_lower)
+        # wall_width = (wall_width_lower +
+        #             wall_width_lower)
         
-        wall_height = (array_upper + 
-                    array_lower)
-
-
-
+        # wall_height = (array_upper + 
+        #             array_lower)
 
 
 
@@ -227,7 +221,7 @@ class AneurysmSimulation2D:
         inlet, outlet, walls = self.define_boundary_indices()
         
         # Inlet: use new direct BC
-        bc_inlet = DirectTimeDependentBC(
+        bc_inlet = TimeDependentZouHeBC(
             bc_type="velocity",
             indices=inlet,
             dt=self.dt,
@@ -243,16 +237,7 @@ class AneurysmSimulation2D:
         
         # Inlet: constant velocity profile
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
-        
-        
-
-
-        # bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
-        # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.velocity_profiles.get("ICA"), indices=inlet)
         # bc_inlet = ZouHeBC("velocity", prescribed_value=(0.0, self.u_max), indices=inlet)
-        
-        # self.u_max = bc_inlet.u_max
-        # print("u_max:", self.u_max)
         
         # Outlet: zero-gradient outflow
         bc_outlet = ExtrapolationOutflowBC(indices=outlet)
@@ -261,13 +246,6 @@ class AneurysmSimulation2D:
         self.boundary_conditions = [bc_walls, bc_inlet, bc_outlet]
 
     def setup_stepper(self):
-        # self.stepper = IncompressibleNavierStokesStepper(
-        #     omega=self.omega,
-        #     grid=self.grid,
-        #     boundary_conditions=self.boundary_conditions,
-        #     collision_type="BGK"
-        # )     
-
         # New custom stepper with timestep support
         self.stepper = INSETimestepStepper(
             omega=self.omega,
@@ -276,90 +254,6 @@ class AneurysmSimulation2D:
             collision_type="BGK"
         )
     
-
-    # def bc_profile(self, time):
-    #     time = wp.static(self.precision_policy.store_precision.wp_dtype(time))
-    #     u_max = wp.static(self.precision_policy.store_precision.wp_dtype(self.u_max))
-    #     dt = wp.static(self.precision_policy.store_precision.wp_dtype(self.dt))
-    #     omega = wp.static(self.precision_policy.store_precision.wp_dtype(2.0 * np.pi))
-
-    #     @wp.func
-    #     def bc_profile_warp(index: wp.vec3i):  # Optional timestep parameter
-    #         # Calculate time from actual timestep
-    #         t = dt * wp.float32(time)
-    #         # Sinusoidal velocity with positive offset
-    #         u_x = u_max * (0.5 + 0.5 * wp.sin(omega * t))
-    #         return wp.vec(u_x, length=1)
-
-    #     def bc_profile_jax():
-    #         def velocity(time):
-    #             t = self.dt * time
-    #             u_x = self.u_max * (0.5 + 0.5 * jnp.sin(omega * t))
-    #             u_y = jnp.zeros_like(u_x)
-    #             return jnp.array([u_x, u_y])
-    #         return velocity
-
-    #     if self.backend == ComputeBackend.JAX:
-    #         return bc_profile_jax
-    #     elif self.backend == ComputeBackend.WARP:
-    #         return bc_profile_warp
-
-
-    def bc_profile(self):
-        u_max = wp.static(self.precision_policy.store_precision.wp_dtype(self.u_max))
-        dt = wp.static(self.precision_policy.store_precision.wp_dtype(self.dt))
-        omega = wp.static(self.precision_policy.store_precision.wp_dtype(2.0 * np.pi * 20))
-
-        @wp.func
-        def bc_profile_warp(index: wp.vec3i, timestep: wp.int32=10):  # Optional timestep parameter
-            # Calculate time from actual timestep
-            t = dt * wp.float32(timestep)
-            # Sinusoidal velocity with positive offset
-            u_x = u_max * (0.5 + 0.5 * wp.sin(omega * t))
-            # u_x = u_max * 0.5 * t
-            return wp.vec(u_x, length=1)
-
-        def bc_profile_jax():
-            def velocity(timestep):
-                t = self.dt * timestep
-                u_x = self.u_max * (0.5 + 0.5 * jnp.sin(omega * t))
-                u_y = jnp.zeros_like(u_x)
-                return jnp.array([u_x, u_y])
-            return velocity
-
-        if self.backend == ComputeBackend.JAX:
-            return bc_profile_jax
-        elif self.backend == ComputeBackend.WARP:
-            return bc_profile_warp
-
-    # def bc_profile(self):
-    #     # Convert values to static WARP types for kernel use
-    #     u_max = wp.static(self.precision_policy.store_precision.wp_dtype(self.u_max))
-    #     dt = wp.static(self.precision_policy.store_precision.wp_dtype(self.dt))
-    #     omega = wp.static(self.precision_policy.store_precision.wp_dtype(2.0 * np.pi * 2345))
-
-    #     @wp.func
-    #     def bc_profile_warp(index: wp.vec3i):  # Note: only takes index parameter
-    #         # Calculate time from x-component of index
-    #         t = dt * wp.float32(index[0])
-    #         # Sinusoidal velocity with positive offset
-    #         u_x = u_max * (0.5 + 10.5 * wp.sin(omega * t))
-    #         # Return single value as vector
-    #         return wp.vec(u_x, length=1)
-
-    #     def bc_profile_jax():
-    #         def velocity(timestep):
-    #             t = self.dt * timestep
-    #             u_x = self.u_max * (0.5 + 0.5 * jnp.sin(omega * t))
-    #             u_y = jnp.zeros_like(u_x)
-    #             return jnp.array([u_x, u_y])
-    #         return velocity
-
-    #     if self.backend == ComputeBackend.JAX:
-    #         return bc_profile_jax
-    #     elif self.backend == ComputeBackend.WARP:
-    #         return bc_profile_warp
-
     
     # PARTIALLY COMPLETED POUSIELLE FLOW PROFILE
     # def bc_profile(self):
@@ -418,18 +312,6 @@ class AneurysmSimulation2D:
         mlups_history = []
         
         for i in range(num_steps + 1):
-
-            # # update bc profile
-            # self.bc_inlet = self.bc_inlet = ZouHeBC("velocity", profile=self.bc_profile(time=i), indices=self.inlet)
-            # self.bc_mask, self.missing_mask = self.stepper._process_boundary_conditions([self.bc_inlet], self.bc_mask, self.missing_mask)
-            # self.f_0, self.f_1 = self.stepper._initialize_auxiliary_data([self.bc_inlet], self.f_0, self.f_1, self.bc_mask, self.missing_mask)
-
-
-            # Update timestep for time-dependent boundary conditions
-            for bc in self.boundary_conditions:
-                if hasattr(bc, 'update_timestep'):
-                    bc.update_timestep(i)
-
             # Measure pure simulation step time
             step_start = time.time()
             self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, i)
@@ -546,8 +428,6 @@ class AneurysmSimulation2D:
         # Use theoretical maximum velocity as upper bound
         vmin = 0.0
         vmax = self.u_max * 1.5     # 50% margin max velocity
-        print(self.u_max)
-        print(self.dx, self.dt, self.dx/self.dt)
         print(f"Saving image with vmin={vmin}, vmax={vmax}")
         print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
         print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))

@@ -4,7 +4,7 @@ from xlb.operator.stepper.nse_stepper import IncompressibleNavierStokesStepper
 from xlb.operator import Operator
 from xlb.compute_backend import ComputeBackend
 from xlb.operator.boundary_condition.boundary_condition import ImplementationStep
-from direct_bc import DirectTimeDependentBC  # Import your custom BC
+from direct_bc import TimeDependentZouHeBC  # Import your custom BC
 
 class INSETimestepStepper(IncompressibleNavierStokesStepper):
 
@@ -12,12 +12,12 @@ class INSETimestepStepper(IncompressibleNavierStokesStepper):
         super().__init__(*args, **kwargs)
         # Identify any time-dependent BCs for later use
         self.time_dependent_bcs = [bc for bc in self.boundary_conditions 
-                                  if isinstance(bc, DirectTimeDependentBC)]
+                                  if isinstance(bc, TimeDependentZouHeBC)]
         print(f"Registered {len(self.time_dependent_bcs)} time-dependent boundary conditions")
 
 
     """
-    Custom Navier-Stokes stepper that passes timestep to DirectTimeDependentBC instances
+    Custom Navier-Stokes stepper that passes timestep to TimeDependentZouHeBC instances
     while maintaining original behavior for other boundary conditions.
     """
     
@@ -25,7 +25,7 @@ class INSETimestepStepper(IncompressibleNavierStokesStepper):
     @partial(jit, static_argnums=(0))
     def jax_implementation(self, f_0, f_1, bc_mask, missing_mask, timestep):
         """
-        Override the JAX implementation to pass timestep to DirectTimeDependentBC
+        Override the JAX implementation to pass timestep to TimeDependentZouHeBC
         """
         # Cast to compute precision
         f_0 = self.precision_policy.cast_to_compute_jax(f_0)
@@ -34,10 +34,10 @@ class INSETimestepStepper(IncompressibleNavierStokesStepper):
         # Apply streaming
         f_post_stream = self.stream(f_0)
 
-        # Apply boundary conditions - MODIFIED to pass timestep to DirectTimeDependentBC
+        # Apply boundary conditions - MODIFIED to pass timestep to TimeDependentZouHeBC
         for bc in self.boundary_conditions:
             if bc.implementation_step == ImplementationStep.STREAMING:
-                if isinstance(bc, DirectTimeDependentBC):
+                if isinstance(bc, TimeDependentZouHeBC):
                     # Pass timestep to our custom BC
                     f_post_stream = bc(
                         f_0,
@@ -68,7 +68,7 @@ class INSETimestepStepper(IncompressibleNavierStokesStepper):
         for bc in self.boundary_conditions:
             f_post_collision = bc.update_bc_auxilary_data(f_post_stream, f_post_collision, bc_mask, missing_mask)
             if bc.implementation_step == ImplementationStep.COLLISION:
-                if isinstance(bc, DirectTimeDependentBC):
+                if isinstance(bc, TimeDependentZouHeBC):
                     # Pass timestep to our custom BC
                     f_post_collision = bc(
                         f_post_stream,

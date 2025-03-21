@@ -83,12 +83,6 @@ def aneurysm_simulation_setup(
     # Source: Krüger et al. (2017) - The Lattice Boltzmann Method: Principles and Practice
     # dt_max = 0.2 * dx**2 / kinematic_viscosity
     
-    # # Warn if provided dt exceeds stability limit
-    # if dt > dt_max:
-    #     print(f"WARNING: Provided dt={dt} exceeds stability limit dt_max={dt_max}")
-    #     print(f"Automatically adjusting dt to {dt_max}")
-    #     dt = dt_max
-    
     # Use consistent dt for all calculations
     nu_lbm = kinematic_viscosity * dt / (dx**2)
     omega = 1.0 / (3 * nu_lbm + 0.5)
@@ -187,7 +181,6 @@ if __name__ == "__main__":
     else:
         selected_profile = list(flow_profile_data.keys())[selected_index - 1]
         selected_data = flow_profile_data[selected_profile]
-        print(selected_data)
         
         # Ask user to select y columns
         print("Available columns:")
@@ -212,9 +205,6 @@ if __name__ == "__main__":
             'name': profile_name,
             'data': {'x': x_col, 'y': y_col}
         }
-
-
-    print(flow_profile)
 
     import warp as wp
     wp.clear_kernel_cache()     # Clear kernel cache to avoid conflicts with new kernel code
