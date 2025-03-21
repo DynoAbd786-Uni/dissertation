@@ -1,10 +1,14 @@
+# Binary files and outputs
 **/*.vtk
 **/*.png
 **/*.json
 **/*.zip
 **/*.tar.gz
-**/*__pycache__*/**
 
+# Python cache files
 **/__pycache__/
+**/*.py[cod]
+**/*$py.class
 
-aneurysm_simulation/**
+# Simulation output directories
+aneurysm_simulation/
