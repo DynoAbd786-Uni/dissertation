@@ -1,0 +1,14 @@
+version: '3'
+services:
+  dissertation:
+    build: .
+    volumes:
+      - ./:/app
+      - ./results:/app/results
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
