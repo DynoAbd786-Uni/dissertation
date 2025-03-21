@@ -1,9 +1,9 @@
-from aneurysm_model_2D import AneurysmSimulation2D
+from models.aneurysm_model_2D import AneurysmSimulation2D
 from xlb import ComputeBackend, PrecisionPolicy
-from load_csv import load_csv_data
+from utils.load_csv import load_csv_data
 import xlb
 import warp as wp
-from constants import load_profile_values
+from utils.constants import load_profile_values
 import numpy as np
 
 

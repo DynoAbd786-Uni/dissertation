@@ -4,7 +4,7 @@ from xlb.operator.stepper.nse_stepper import IncompressibleNavierStokesStepper
 from xlb.operator import Operator
 from xlb.compute_backend import ComputeBackend
 from xlb.operator.boundary_condition.boundary_condition import ImplementationStep
-from direct_bc import TimeDependentZouHeBC  # Import your custom BC
+from boundary_conditions.direct_bc import TimeDependentZouHeBC  # Import your custom BC
 
 class INSETimestepStepper(IncompressibleNavierStokesStepper):
 

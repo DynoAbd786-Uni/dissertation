@@ -4,7 +4,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from glob import glob
-from constants import PARAMS_DIR
+from utils.constants import PARAMS_DIR
 
 
 
@@ -43,6 +43,7 @@ def load_csv_data(vessel_radius_mm=None, dx=None, dt=None, plot=False, normalize
             }
     """
     file_paths = glob(PARAMS_DIR + "/*.csv")
+    print("file_paths", file_paths)
     result = {}
     
     for file_path in file_paths:

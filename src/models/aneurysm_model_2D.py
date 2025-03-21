@@ -17,9 +17,8 @@ import os
 from pathlib import Path
 import jax
 
-from direct_bc import TimeDependentZouHeBC
-from timestep_stepper import INSETimestepStepper
-# from velocity_profiles import VelocityProfileRegistry
+from boundary_conditions.direct_bc import TimeDependentZouHeBC
+from stepper.timestep_stepper import INSETimestepStepper
 
 
 MM_TO_M = 0.001
@@ -54,7 +53,7 @@ class AneurysmSimulation2D:
 
 
         # Setup output directories
-        self.output_dir = Path("aneurysm_simulation")
+        self.output_dir = Path("../aneurysm_simulation_results")
         self.vtk_dir = self.output_dir / "vtk"
         self.img_dir = self.output_dir / "images"
         self.params_dir = self.output_dir / "parameters"

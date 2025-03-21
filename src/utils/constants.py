@@ -1,7 +1,7 @@
 import warp as wp
 import numpy as np
 
-PARAMS_DIR = "params"
+PARAMS_DIR = "../params"
 
 
 # These will store the 64 values from the flow profile divided into 4 matrices
