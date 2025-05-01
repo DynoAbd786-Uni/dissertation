@@ -111,7 +111,7 @@ class TimeDependentZouHeBC(BoundaryCondition):
     # Modify _construct_warp to accept a pre-calculated velocity
     def _construct_warp(self):
 
-        from constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
+        from utils.constants import Y_VALUES_1, Y_VALUES_2, Y_VALUES_3, Y_VALUES_4
         
         """Construct the WARP kernel and functional"""
         _d = self.velocity_set.d

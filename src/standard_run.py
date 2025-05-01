@@ -39,7 +39,7 @@ def aneurysm_simulation_setup(
     bulge_vertical_lu = int(round((bulge_vertical_mm / 2) * mm_to_m / resolution_m))
     
     # Final grid shape including bulge
-    grid_shape = (grid_x + 1, grid_y + bulge_vertical_lu + 1) # Add 1 for boundary cells
+    grid_shape = (grid_x + 2, grid_y + bulge_vertical_lu + 2) # Add 1 for boundary cells
     
     # Calculate vessel centerline
     vessel_centre_lu = grid_y // 2
