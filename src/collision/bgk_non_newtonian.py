@@ -105,20 +105,27 @@ class BGKNonNewtonian(Collision):
             shear_rate_lu = calculate_shear_rate(u, i, j, k, dim)
             
             # Convert shear rate from lattice to physical units
-            shear_rate_physical = shear_rate_lu / _dt_physical
+            # Avoid division by zero by ensuring dt_physical is non-zero
+            dt_safe = wp.max(_dt_physical, 1.0e-10)
+            shear_rate_physical = shear_rate_lu / dt_safe
 
             # Apply Carreau-Yasuda model
             factor = wp.pow(1.0 + wp.pow(_lambda_cy * shear_rate_physical, _a), (_n - 1.0) / _a)
             viscosity_physical = _mu_inf + (_mu_0 - _mu_inf) * factor
             
             # Convert to kinematic viscosity (assuming density = 1.0)
-            nu_physical = viscosity_physical / 1.0
+            # Density should never be exactly zero, but add safety
+            density = 1.0
+            nu_physical = viscosity_physical / wp.max(density, 1.0e-10)
             
             # Convert to lattice units
-            nu_lu = nu_physical * _dt_physical / (_dx_physical * _dx_physical)
+            # Avoid division by zero in squared values
+            dx_squared = wp.max(_dx_physical * _dx_physical, 1.0e-20)
+            nu_lu = nu_physical * dt_safe / dx_squared
             
-            # Calculate relaxation rate omega
-            omega_local = 1.0 / (3.0 * nu_lu + 0.5)
+            # Calculate relaxation rate omega (add safety to denominator)
+            denom = wp.max(3.0 * nu_lu + 0.5, 1.0e-10)
+            omega_local = 1.0 / denom
             
             # Apply stability bounds    
             omega_local = wp.clamp(omega_local, _min_omega, _max_omega)

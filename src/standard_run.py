@@ -20,9 +20,6 @@ def aneurysm_simulation_setup(
     flow_profile=None
 ) -> AneurysmSimulation2D:
     """Setup aneurysm simulation with configurable parameters"""
-
-    # Post-processing interval
-    post_process_interval = max(1, int(1 / (fps * dt)))
     
     # Convert mm to meters
     mm_to_m = 0.001
@@ -78,11 +75,6 @@ def aneurysm_simulation_setup(
     # Calculate relaxation parameter
     dx = resolution_m
     
-    # Calculate appropriate dt for stability based on resolution
-    # Using CFL condition and diffusion stability
-    # Source: Krüger et al. (2017) - The Lattice Boltzmann Method: Principles and Practice
-    # dt_max = 0.2 * dx**2 / kinematic_viscosity
-    
     # Use consistent dt for all calculations
     nu_lbm = kinematic_viscosity * dt / (dx**2)
     omega = 1.0 / (3 * nu_lbm + 0.5)
@@ -90,8 +82,6 @@ def aneurysm_simulation_setup(
     # Validate tau for stability
     tau = 1/omega
     assert 0.5 <= tau <= 2.0, f"Tau value {tau:.3f} out of stable range [0.5, 2.0]"
-    
-    
     
     # Create input parameters dictionary
     input_params = {
@@ -125,36 +115,38 @@ def aneurysm_simulation_setup(
         input_params=input_params
     )
     
-    return simulation, post_process_interval
+    return simulation
 
-def run_for_duration(simulation, duration_seconds, dt, post_process_interval=None):
+def run_for_duration(simulation, duration_seconds, dt, post_process_interval=None, warmup_seconds=0.0):
     """Run simulation for a specific duration in seconds.
+    
+    This is a wrapper around the AneurysmSimulation2D.run_for_duration method
+    for backward compatibility.
     
     Args:
         simulation: The simulation object
         duration_seconds: How long to run in physical time (seconds)
         dt: Time step size (seconds)
         post_process_interval: Steps between post-processing
+        warmup_seconds: Initial period in seconds to run before starting post-processing
         
     Returns:
         The total number of steps executed
     """
-    # Calculate number of steps needed for this duration
-    num_steps = int(round(duration_seconds / dt))
+    # Print deprecation warning
+    print("DEPRECATION WARNING: This function is replaced by simulation.run_for_duration()")
     
-    print(f"Running simulation for {duration_seconds:.4f} seconds")
-    print(f"Time step: {dt:.2e} seconds")
-    print(f"Total steps: {num_steps:,}")
-    
-    # Run the simulation
-    simulation.run(num_steps, post_process_interval=post_process_interval)
-    
-    return num_steps
+    # Call the simulation's run_for_duration method
+    return simulation.run_for_duration(
+        duration_seconds=duration_seconds,
+        warmup_seconds=warmup_seconds,
+        post_process_interval=post_process_interval
+    )
 
 
 if __name__ == "__main__":
     dt = 1e-5  # Time step size (seconds)
-    resolution_mm = 0.05  # 0.01mm resolution
+    resolution_mm = 0.02  # 0.01mm resolution
     resolution_m = resolution_mm * 0.001  # Convert to meters
     vessel_diameter_mm = 6.5  # Male Common Carotid Artery size. Source https://www.ahajournals.org/doi/10.1161/01.STR.0000206440.48756.f7
 
@@ -210,7 +202,7 @@ if __name__ == "__main__":
     wp.clear_kernel_cache()     # Clear kernel cache to avoid conflicts with new kernel code
 
     # Create simulation with realistic vessel parameters
-    simulation, post_process_interval = aneurysm_simulation_setup(
+    simulation = aneurysm_simulation_setup(
         vessel_length_mm=15,         # 10mm vessel length
         vessel_diameter_mm=vessel_diameter_mm,        # 2mm vessel diameter (typical cerebral artery)
         bulge_horizontal_mm=12,       # 6mm horizontal bulge
@@ -223,15 +215,13 @@ if __name__ == "__main__":
         flow_profile=flow_profile    # Pass selected flow profile with name
     )
     
-    # Run simulation 
-    run_for_duration(
-        simulation=simulation, 
-        duration_seconds=1.0,  # Adjust this value as needed
-        dt=dt,
-        post_process_interval=post_process_interval
+    # Run simulation for 1 second with warmup
+    simulation.run_for_duration(
+        duration_seconds=0.1,
+        warmup_seconds=1.0    # Run for 1.0 seconds before starting visualization
     )
 
-    # simulation.run(150000, post_process_interval=post_process_interval)
+    # simulation.run(150000)
     
     # TODO:
     # look into the post_process method to see if it can be modified to save the results in a more useful format
