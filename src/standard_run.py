@@ -39,13 +39,13 @@ def aneurysm_simulation_setup(
     bulge_vertical_lu = int(round((bulge_vertical_mm / 2) * mm_to_m / resolution_m))
     
     # Final grid shape including bulge
-    grid_shape = (grid_x + 2, grid_y + bulge_vertical_lu + 2) # Add 1 for boundary cells
+    grid_shape = (grid_x + 1, grid_y + bulge_vertical_lu + 5) # Add 1 for boundary cells
     
     # Calculate vessel centerline
     vessel_centre_lu = grid_y // 2
     
     # Simulation parameters
-    backend = ComputeBackend.JAX
+    backend = ComputeBackend.WARP
     # This isnt really a good move
     # Preload selected CSV data for flow profile if warp selected
     if backend == ComputeBackend.WARP and flow_profile is not None and flow_profile.get('data') is not None:

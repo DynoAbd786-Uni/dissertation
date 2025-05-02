@@ -2,7 +2,7 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.grid import grid_factory
 from xlb.operator.stepper import IncompressibleNavierStokesStepper
-from xlb.operator.boundary_condition import HalfwayBounceBackBC, ZouHeBC, ExtrapolationOutflowBC
+from xlb.operator.boundary_condition import HalfwayBounceBackBC, FullwayBounceBackBC, ZouHeBC, ExtrapolationOutflowBC
 from xlb.operator.macroscopic import Macroscopic
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set
@@ -18,7 +18,7 @@ from pathlib import Path
 import jax
 
 from boundary_conditions.direct_bc import TimeDependentZouHeBC
-from stepper.custom_nse_stepper import INSETimestepStepper
+from stepper.custom_nse_stepper import CustomNSEStepper
 
 
 MM_TO_M = 0.001
@@ -232,7 +232,7 @@ class AneurysmSimulation2D:
 
 
         # Walls: no-slip boundary condition
-        bc_walls = HalfwayBounceBackBC(indices=walls)
+        bc_walls = FullwayBounceBackBC(indices=walls)
         
         # Inlet: constant velocity profile
         # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
@@ -246,11 +246,11 @@ class AneurysmSimulation2D:
 
     def setup_stepper(self):
         # New custom stepper with timestep support
-        self.stepper = INSETimestepStepper(
+        self.stepper = CustomNSEStepper(
             omega=self.omega,
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
-            collision_type="BGK"
+            collision_type="BGKNonNewtonian"
         )
     
     

@@ -24,1531 +24,1531 @@ Warp 1.6.0 initialized:
 No GPU support is available; CPU fallback will be used.
 Output directories exist. Would you like to clear them? (y/n): Cleaning up previous simulation outputs...
 Cleanup complete.
-registered bc TimeDependentZouHeBC_8021032376471 with id 1
+registered bc TimeDependentZouHeBC_8596105668750 with id 1
 Using sinusoidal flow profile: Sinusoidal_1Hz
-registered bc HalfwayBounceBackBC_8021032376552 with id 2
-registered bc ExtrapolationOutflowBC_8021032377107 with id 3
+registered bc FullwayBounceBackBC_8596105668831 with id 2
+registered bc ExtrapolationOutflowBC_8596105669386 with id 3
 Registered 1 time-dependent boundary conditions
 Running simulation for 1.0000 seconds
 Time step: 1.00e-05 seconds
 Total steps: 100,000
 Starting simulation with backend: ComputeBackend.JAX
-Boundary conditions: ['HalfwayBounceBackBC', 'TimeDependentZouHeBC', 'ExtrapolationOutflowBC']
+Boundary conditions: ['FullwayBounceBackBC', 'TimeDependentZouHeBC', 'ExtrapolationOutflowBC']
 
 Step 0/100000 (0.0%)
 Simulation Statistics:
 ├── Current MLUPS: 0.18
 ├── Average MLUPS: 0.18
-├── Step time: 347.15ms
-└── ETA: 9:38:35
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0000000.vtk in 0.002862 seconds.
+├── Step time: 353.38ms
+└── ETA: 9:48:57
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0000000.vtk in 0.003210 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
 rho values: 1.0 1.0
 u_x values: 0.0 0.0
 u_y values: 0.0 0.0
 u_magnitude values: 0.0 0.0
 
-Post-processing time: 0.647s
+Post-processing time: 0.652s
 
 Step 1000/100000 (1.0%)
 Simulation Statistics:
-├── Current MLUPS: 213.46
-├── Average MLUPS: 224.11
-├── Step time: 0.30ms
+├── Current MLUPS: 188.31
+├── Average MLUPS: 225.82
+├── Step time: 0.34ms
 └── ETA: 0:00:28
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0001000.vtk in 0.003033 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0001000.vtk in 0.003134 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8973184 0.9610863
-u_x values: -0.29133186 0.076618455
-u_y values: -0.26160207 0.19471787
-u_magnitude values: 3.046232e-05 0.3282926
+rho values: 0.89989537 1.0
+u_x values: -0.28719985 0.047315553
+u_y values: -0.25406328 0.17334977
+u_magnitude values: 0.0 0.31949612
 
-Post-processing time: 0.064s
+Post-processing time: 0.065s
 
 Step 2000/100000 (2.0%)
 Simulation Statistics:
-├── Current MLUPS: 227.57
-├── Average MLUPS: 233.01
-├── Step time: 0.28ms
+├── Current MLUPS: 221.56
+├── Average MLUPS: 234.92
+├── Step time: 0.29ms
 └── ETA: 0:00:26
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0002000.vtk in 0.003327 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0002000.vtk in 0.003078 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9150356 0.9376969
-u_x values: -0.33879656 0.04376407
-u_y values: -0.2702901 0.23294419
-u_magnitude values: 1.50260885e-05 0.34939963
+rho values: 0.9175284 1.0
+u_x values: -0.33486974 0.07017549
+u_y values: -0.26478457 0.21489462
+u_magnitude values: 0.0 0.34568828
 
-Post-processing time: 0.068s
+Post-processing time: 0.065s
 
 Step 3000/100000 (3.0%)
 Simulation Statistics:
-├── Current MLUPS: 259.20
-├── Average MLUPS: 232.99
-├── Step time: 0.25ms
-└── ETA: 0:00:26
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0003000.vtk in 0.003225 seconds.
+├── Current MLUPS: 88.86
+├── Average MLUPS: 199.96
+├── Step time: 0.72ms
+└── ETA: 0:00:31
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0003000.vtk in 0.003992 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8985995 0.93170583
-u_x values: -0.38328838 0.07533066
-u_y values: -0.29288706 0.230565
-u_magnitude values: 5.3922144e-05 0.38379806
-
-Post-processing time: 0.066s
-
-Step 4000/100000 (4.0%)
-Simulation Statistics:
-├── Current MLUPS: 237.85
-├── Average MLUPS: 232.34
-├── Step time: 0.27ms
-└── ETA: 0:00:26
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0004000.vtk in 0.003134 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.90064484 0.92160136
-u_x values: -0.40840262 0.105129346
-u_y values: -0.32191086 0.25174654
-u_magnitude values: 4.063135e-06 0.4084523
-
-Post-processing time: 0.066s
-
-Step 5000/100000 (5.0%)
-Simulation Statistics:
-├── Current MLUPS: 230.50
-├── Average MLUPS: 232.69
-├── Step time: 0.28ms
-└── ETA: 0:00:26
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0005000.vtk in 0.002922 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8955287 0.9169762
-u_x values: -0.44321075 0.13917188
-u_y values: -0.34675556 0.2684551
-u_magnitude values: 4.3917184e-06 0.44324946
-
-Post-processing time: 0.066s
-
-Step 6000/100000 (6.0%)
-Simulation Statistics:
-├── Current MLUPS: 178.55
-├── Average MLUPS: 233.52
-├── Step time: 0.36ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0006000.vtk in 0.003299 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8893999 0.9114813
-u_x values: -0.4645805 0.17530233
-u_y values: -0.37878525 0.2928997
-u_magnitude values: 4.52488e-06 0.46633425
-
-Post-processing time: 0.068s
-
-Step 7000/100000 (7.0%)
-Simulation Statistics:
-├── Current MLUPS: 186.74
-├── Average MLUPS: 231.95
-├── Step time: 0.34ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0007000.vtk in 0.003266 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8834058 0.9086929
-u_x values: -0.48368636 0.21557045
-u_y values: -0.42971933 0.33417526
-u_magnitude values: 1.7019836e-06 0.5214039
-
-Post-processing time: 0.077s
-
-Step 8000/100000 (8.0%)
-Simulation Statistics:
-├── Current MLUPS: 218.32
-├── Average MLUPS: 230.09
-├── Step time: 0.29ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0008000.vtk in 0.003289 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8764384 0.905647
-u_x values: -0.5294617 0.25707474
-u_y values: -0.50795865 0.42185622
-u_magnitude values: 8.37381e-06 0.6067202
-
-Post-processing time: 0.067s
-
-Step 9000/100000 (9.0%)
-Simulation Statistics:
-├── Current MLUPS: 190.45
-├── Average MLUPS: 227.70
-├── Step time: 0.34ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0009000.vtk in 0.002851 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8711687 0.9026779
-u_x values: -0.57810247 0.29321578
-u_y values: -0.5456861 0.49043652
-u_magnitude values: 3.7744724e-06 0.6505709
-
-Post-processing time: 0.067s
-
-Step 10000/100000 (10.0%)
-Simulation Statistics:
-├── Current MLUPS: 218.14
-├── Average MLUPS: 232.10
-├── Step time: 0.29ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0010000.vtk in 0.002948 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8698867 0.898555
-u_x values: -0.5700924 0.31465417
-u_y values: -0.5035465 0.456047
-u_magnitude values: 1.9906362e-05 0.61976844
-
-Post-processing time: 0.067s
-
-Step 11000/100000 (11.0%)
-Simulation Statistics:
-├── Current MLUPS: 210.12
-├── Average MLUPS: 232.25
-├── Step time: 0.30ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0011000.vtk in 0.003388 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8670097 0.89396393
-u_x values: -0.5485377 0.32209277
-u_y values: -0.35029715 0.3465849
-u_magnitude values: 4.4039516e-06 0.54871035
-
-Post-processing time: 0.066s
-
-Step 12000/100000 (12.0%)
-Simulation Statistics:
-├── Current MLUPS: 213.80
-├── Average MLUPS: 232.05
-├── Step time: 0.30ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0012000.vtk in 0.003090 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.86338156 0.8890544
-u_x values: -0.55403733 0.31705046
-u_y values: -0.27887857 0.3085094
-u_magnitude values: 1.0644119e-06 0.55404764
-
-Post-processing time: 0.066s
-
-Step 13000/100000 (13.0%)
-Simulation Statistics:
-├── Current MLUPS: 229.32
-├── Average MLUPS: 231.85
-├── Step time: 0.28ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0013000.vtk in 0.003055 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.85986024 0.88353956
-u_x values: -0.5530669 0.2997351
-u_y values: -0.28605214 0.29931068
-u_magnitude values: 6.837129e-06 0.5530814
-
-Post-processing time: 0.067s
-
-Step 14000/100000 (14.0%)
-Simulation Statistics:
-├── Current MLUPS: 216.74
-├── Average MLUPS: 232.46
-├── Step time: 0.30ms
-└── ETA: 0:00:23
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0014000.vtk in 0.002967 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.85641587 0.87997836
-u_x values: -0.54771554 0.27225566
-u_y values: -0.29281533 0.30044806
-u_magnitude values: 4.1223448e-06 0.54782164
-
-Post-processing time: 0.065s
-
-Step 15000/100000 (15.0%)
-Simulation Statistics:
-├── Current MLUPS: 227.00
-├── Average MLUPS: 232.77
-├── Step time: 0.28ms
-└── ETA: 0:00:23
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0015000.vtk in 0.003057 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.85307306 0.87691665
-u_x values: -0.54008 0.24700761
-u_y values: -0.29894117 0.3037593
-u_magnitude values: 1.9643155e-06 0.5403318
-
-Post-processing time: 0.065s
-
-Step 16000/100000 (16.0%)
-Simulation Statistics:
-├── Current MLUPS: 224.34
-├── Average MLUPS: 232.42
-├── Step time: 0.29ms
-└── ETA: 0:00:23
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0016000.vtk in 0.003196 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8498624 0.8740813
-u_x values: -0.5321556 0.22546074
-u_y values: -0.3042463 0.3082397
-u_magnitude values: 2.2854656e-06 0.5324931
-
-Post-processing time: 0.067s
-
-Step 17000/100000 (17.0%)
-Simulation Statistics:
-├── Current MLUPS: 222.48
-├── Average MLUPS: 219.52
-├── Step time: 0.29ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0017000.vtk in 0.003085 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.84685004 0.8714774
-u_x values: -0.52899945 0.20636964
-u_y values: -0.30870667 0.31389493
-u_magnitude values: 8.047629e-07 0.5290506
-
-Post-processing time: 0.064s
-
-Step 18000/100000 (18.0%)
-Simulation Statistics:
-├── Current MLUPS: 231.30
-├── Average MLUPS: 221.65
-├── Step time: 0.28ms
-└── ETA: 0:00:23
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0018000.vtk in 0.003844 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.84411067 0.86910355
-u_x values: -0.53549176 0.19185884
-u_y values: -0.31246483 0.31989172
-u_magnitude values: 1.0307647e-06 0.5381722
-
-Post-processing time: 0.082s
-
-Step 19000/100000 (19.0%)
-Simulation Statistics:
-├── Current MLUPS: 242.58
-├── Average MLUPS: 191.73
-├── Step time: 0.26ms
-└── ETA: 0:00:27
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0019000.vtk in 0.003752 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8416976 0.8669943
-u_x values: -0.5405089 0.18177563
-u_y values: -0.31570855 0.3249657
-u_magnitude values: 2.1548312e-06 0.54582316
-
-Post-processing time: 0.085s
-
-Step 20000/100000 (20.0%)
-Simulation Statistics:
-├── Current MLUPS: 296.72
-├── Average MLUPS: 197.06
-├── Step time: 0.22ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0020000.vtk in 0.003764 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8396105 0.8651604
-u_x values: -0.54433775 0.17222029
-u_y values: -0.31854543 0.32822457
-u_magnitude values: 1.0074881e-06 0.55152106
-
-Post-processing time: 0.086s
-
-Step 21000/100000 (21.0%)
-Simulation Statistics:
-├── Current MLUPS: 235.97
-├── Average MLUPS: 199.29
-├── Step time: 0.27ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0021000.vtk in 0.004207 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8377918 0.86356866
-u_x values: -0.547657 0.16179778
-u_y values: -0.32094136 0.3302762
-u_magnitude values: 1.3774095e-06 0.5556069
-
-Post-processing time: 0.094s
-
-Step 22000/100000 (22.0%)
-Simulation Statistics:
-├── Current MLUPS: 309.02
-├── Average MLUPS: 198.95
-├── Step time: 0.21ms
-└── ETA: 0:00:25
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0022000.vtk in 0.003514 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8362012 0.8621836
-u_x values: -0.5510694 0.15297009
-u_y values: -0.32281962 0.33187148
-u_magnitude values: 6.71107e-07 0.5588032
-
-Post-processing time: 0.080s
-
-Step 23000/100000 (23.0%)
-Simulation Statistics:
-├── Current MLUPS: 241.27
-├── Average MLUPS: 201.34
-├── Step time: 0.27ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0023000.vtk in 0.003101 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8348527 0.86101925
-u_x values: -0.55385375 0.14607161
-u_y values: -0.32415417 0.33303255
-u_magnitude values: 9.2171916e-07 0.5611847
-
-Post-processing time: 0.071s
-
-Step 24000/100000 (24.0%)
-Simulation Statistics:
-├── Current MLUPS: 212.95
-├── Average MLUPS: 202.35
-├── Step time: 0.30ms
-└── ETA: 0:00:24
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0024000.vtk in 0.004048 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8337887 0.8601023
-u_x values: -0.55590415 0.1398574
-u_y values: -0.32496566 0.3336205
-u_magnitude values: 8.0748316e-07 0.5625007
-
-Post-processing time: 0.073s
-
-Step 25000/100000 (25.0%)
-Simulation Statistics:
-├── Current MLUPS: 224.34
-├── Average MLUPS: 208.22
-├── Step time: 0.29ms
-└── ETA: 0:00:23
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0025000.vtk in 0.003272 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8330365 0.85943586
-u_x values: -0.5572018 0.1337431
-u_y values: -0.3252604 0.33363128
-u_magnitude values: 5.941532e-07 0.5626802
-
-Post-processing time: 0.078s
-
-Step 26000/100000 (26.0%)
-Simulation Statistics:
-├── Current MLUPS: 285.98
-├── Average MLUPS: 202.95
-├── Step time: 0.22ms
-└── ETA: 0:00:23
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0026000.vtk in 0.003645 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8325918 0.8590026
-u_x values: -0.5577543 0.12815483
-u_y values: -0.32502055 0.33313608
-u_magnitude values: 5.9236623e-07 0.5618
-
-Post-processing time: 0.071s
-
-Step 27000/100000 (27.0%)
-Simulation Statistics:
-├── Current MLUPS: 225.47
-├── Average MLUPS: 211.79
-├── Step time: 0.28ms
-└── ETA: 0:00:22
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0027000.vtk in 0.003377 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.83244467 0.85879743
-u_x values: -0.5575108 0.12357177
-u_y values: -0.32424223 0.3321421
-u_magnitude values: 1.2542797e-06 0.5599122
-
-Post-processing time: 0.072s
-
-Step 28000/100000 (28.0%)
-Simulation Statistics:
-├── Current MLUPS: 219.03
-├── Average MLUPS: 211.40
-├── Step time: 0.29ms
-└── ETA: 0:00:21
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0028000.vtk in 0.003270 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.83258086 0.85881764
-u_x values: -0.5563968 0.11997409
-u_y values: -0.3229074 0.33061463
-u_magnitude values: 7.335276e-08 0.5569863
-
-Post-processing time: 0.071s
-
-Step 29000/100000 (29.0%)
-Simulation Statistics:
-├── Current MLUPS: 324.32
-├── Average MLUPS: 213.07
-├── Step time: 0.20ms
-└── ETA: 0:00:21
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0029000.vtk in 0.003376 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.832996 0.85906565
-u_x values: -0.55441755 0.1171034
-u_y values: -0.32104227 0.32852975
-u_magnitude values: 3.2799306e-07 0.5544176
-
-Post-processing time: 0.080s
-
-Step 30000/100000 (30.0%)
-Simulation Statistics:
-├── Current MLUPS: 259.46
-├── Average MLUPS: 203.07
-├── Step time: 0.25ms
-└── ETA: 0:00:22
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0030000.vtk in 0.003994 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8336875 0.85954154
-u_x values: -0.5515785 0.11486418
-u_y values: -0.3186407 0.3258865
-u_magnitude values: 2.6250368e-07 0.5515785
-
-Post-processing time: 0.091s
-
-Step 31000/100000 (31.0%)
-Simulation Statistics:
-├── Current MLUPS: 241.27
-├── Average MLUPS: 206.73
-├── Step time: 0.27ms
-└── ETA: 0:00:21
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0031000.vtk in 0.003631 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8346529 0.86024225
-u_x values: -0.5478852 0.113331154
-u_y values: -0.31570998 0.322701
-u_magnitude values: 1.1140903e-06 0.5478852
-
-Post-processing time: 0.078s
-
-Step 32000/100000 (32.0%)
-Simulation Statistics:
-├── Current MLUPS: 62.36
-├── Average MLUPS: 218.63
-├── Step time: 1.03ms
-└── ETA: 0:00:19
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0032000.vtk in 0.003936 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.83589447 0.86116356
-u_x values: -0.5433594 0.1123243
-u_y values: -0.31225178 0.31896845
-u_magnitude values: 7.1069985e-07 0.54335946
-
-Post-processing time: 0.080s
-
-Step 33000/100000 (33.0%)
-Simulation Statistics:
-├── Current MLUPS: 267.47
-├── Average MLUPS: 201.89
-├── Step time: 0.24ms
-└── ETA: 0:00:21
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0033000.vtk in 0.003492 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.83741504 0.8623063
-u_x values: -0.538041 0.111686245
-u_y values: -0.30827236 0.3146908
-u_magnitude values: 1.0897511e-06 0.53806263
-
-Post-processing time: 0.081s
-
-Step 34000/100000 (34.0%)
-Simulation Statistics:
-├── Current MLUPS: 217.26
-├── Average MLUPS: 198.08
-├── Step time: 0.29ms
-└── ETA: 0:00:21
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0034000.vtk in 0.003876 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8392124 0.86366475
-u_x values: -0.5327556 0.111308776
-u_y values: -0.30376983 0.30988258
-u_magnitude values: 6.7874964e-07 0.53277487
-
-Post-processing time: 0.078s
-
-Step 35000/100000 (35.0%)
-Simulation Statistics:
-├── Current MLUPS: 251.67
-├── Average MLUPS: 207.55
-├── Step time: 0.25ms
-└── ETA: 0:00:20
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0035000.vtk in 0.003961 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.84127575 0.86523235
-u_x values: -0.5266928 0.11115673
-u_y values: -0.29875484 0.3045507
-u_magnitude values: 3.8384212e-07 0.5267092
-
-Post-processing time: 0.085s
-
-Step 36000/100000 (36.0%)
-Simulation Statistics:
-├── Current MLUPS: 61.09
-├── Average MLUPS: 214.44
-├── Step time: 1.05ms
-└── ETA: 0:00:19
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0036000.vtk in 0.008260 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.84359795 0.8670029
-u_x values: -0.5199183 0.11123375
-u_y values: -0.2932267 0.29870486
-u_magnitude values: 3.5776694e-07 0.5199318
-
-Post-processing time: 0.113s
-
-Step 37000/100000 (37.0%)
-Simulation Statistics:
-├── Current MLUPS: 233.71
-├── Average MLUPS: 193.54
-├── Step time: 0.27ms
-└── ETA: 0:00:20
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0037000.vtk in 0.003362 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.84616494 0.8689711
-u_x values: -0.5124751 0.111494794
-u_y values: -0.2871945 0.292355
-u_magnitude values: 7.466888e-07 0.51248604
-
-Post-processing time: 0.084s
-
-Step 38000/100000 (38.0%)
-Simulation Statistics:
-├── Current MLUPS: 83.58
-├── Average MLUPS: 196.60
-├── Step time: 0.77ms
-└── ETA: 0:00:20
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0038000.vtk in 0.003430 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.84896654 0.8711281
-u_x values: -0.504367 0.11186904
-u_y values: -0.28066418 0.28551373
-u_magnitude values: 4.0128447e-07 0.50437504
-
-Post-processing time: 0.076s
-
-Step 39000/100000 (39.0%)
-Simulation Statistics:
-├── Current MLUPS: 182.18
-├── Average MLUPS: 201.01
-├── Step time: 0.35ms
-└── ETA: 0:00:19
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0039000.vtk in 0.004751 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8519944 0.87347054
-u_x values: -0.49565667 0.11235845
-u_y values: -0.2736563 0.27820086
-u_magnitude values: 6.771216e-07 0.4956627
+rho values: 0.9017505 1.0
+u_x values: -0.3801244 0.07312755
+u_y values: -0.2865739 0.20995173
+u_magnitude values: 0.0 0.38066688
 
 Post-processing time: 0.096s
 
-Step 40000/100000 (40.0%)
+Step 4000/100000 (4.0%)
 Simulation Statistics:
-├── Current MLUPS: 228.54
-├── Average MLUPS: 204.15
-├── Step time: 0.28ms
-└── ETA: 0:00:18
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0040000.vtk in 0.003651 seconds.
+├── Current MLUPS: 255.26
+├── Average MLUPS: 197.67
+├── Step time: 0.25ms
+└── ETA: 0:00:31
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0004000.vtk in 0.003337 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.85523325 0.8759903
-u_x values: -0.4863858 0.11294581
-u_y values: -0.2661754 0.2704363
-u_magnitude values: 1.2046555e-06 0.48638943
-
-Post-processing time: 0.076s
-
-Step 41000/100000 (41.0%)
-Simulation Statistics:
-├── Current MLUPS: 248.18
-├── Average MLUPS: 218.57
-├── Step time: 0.26ms
-└── ETA: 0:00:17
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0041000.vtk in 0.003386 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.85867643 0.8786771
-u_x values: -0.47658232 0.11362314
-u_y values: -0.25825173 0.2622358
-u_magnitude values: 1.1328214e-06 0.4765842
-
-Post-processing time: 0.066s
-
-Step 42000/100000 (42.0%)
-Simulation Statistics:
-├── Current MLUPS: 243.90
-├── Average MLUPS: 223.56
-├── Step time: 0.26ms
-└── ETA: 0:00:16
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0042000.vtk in 0.003036 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8623071 0.88152033
-u_x values: -0.46627927 0.114380985
-u_y values: -0.24989957 0.25363058
-u_magnitude values: 3.7825671e-07 0.4662798
-
-Post-processing time: 0.065s
-
-Step 43000/100000 (43.0%)
-Simulation Statistics:
-├── Current MLUPS: 224.34
-├── Average MLUPS: 223.92
-├── Step time: 0.29ms
-└── ETA: 0:00:16
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0043000.vtk in 0.003191 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8661151 0.88451594
-u_x values: -0.45553762 0.1153119
-u_y values: -0.24114496 0.24463885
-u_magnitude values: 2.1228296e-08 0.45553762
-
-Post-processing time: 0.066s
-
-Step 44000/100000 (44.0%)
-Simulation Statistics:
-├── Current MLUPS: 218.50
-├── Average MLUPS: 226.01
-├── Step time: 0.29ms
-└── ETA: 0:00:15
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0044000.vtk in 0.003015 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8700841 0.8876491
-u_x values: -0.44438624 0.11631451
-u_y values: -0.23201916 0.23529477
-u_magnitude values: 7.2072885e-07 0.44438714
-
-Post-processing time: 0.063s
-
-Step 45000/100000 (45.0%)
-Simulation Statistics:
-├── Current MLUPS: 220.84
-├── Average MLUPS: 205.91
-├── Step time: 0.29ms
-└── ETA: 0:00:17
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0045000.vtk in 0.003469 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8741946 0.8909055
-u_x values: -0.43286914 0.117413834
-u_y values: -0.22254127 0.22562462
-u_magnitude values: 1.7094216e-06 0.43287206
+rho values: 0.9036262 1.0
+u_x values: -0.40528548 0.10359257
+u_y values: -0.31688088 0.23119596
+u_magnitude values: 0.0 0.4053505
 
 Post-processing time: 0.081s
 
-Step 46000/100000 (46.0%)
+Step 5000/100000 (5.0%)
 Simulation Statistics:
-├── Current MLUPS: 218.86
-├── Average MLUPS: 197.87
-├── Step time: 0.29ms
-└── ETA: 0:00:17
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0046000.vtk in 0.003451 seconds.
+├── Current MLUPS: 226.80
+├── Average MLUPS: 197.68
+├── Step time: 0.28ms
+└── ETA: 0:00:30
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0005000.vtk in 0.003495 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.87843025 0.89427334
-u_x values: -0.4210081 0.118585646
-u_y values: -0.21274975 0.21566449
-u_magnitude values: 4.457633e-07 0.42101467
+rho values: 0.8984232 1.0
+u_x values: -0.44055852 0.1362119
+u_y values: -0.3414744 0.2459285
+u_magnitude values: 0.0 0.44058472
 
-Post-processing time: 0.083s
+Post-processing time: 0.087s
 
-Step 47000/100000 (47.0%)
+Step 6000/100000 (6.0%)
 Simulation Statistics:
-├── Current MLUPS: 234.53
-├── Average MLUPS: 194.31
+├── Current MLUPS: 280.90
+├── Average MLUPS: 196.46
+├── Step time: 0.23ms
+└── ETA: 0:00:30
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0006000.vtk in 0.004279 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.89254963 1.0
+u_x values: -0.46173665 0.17236434
+u_y values: -0.3728287 0.2689877
+u_magnitude values: 0.0 0.46176153
+
+Post-processing time: 0.084s
+
+Step 7000/100000 (7.0%)
+Simulation Statistics:
+├── Current MLUPS: 238.49
+├── Average MLUPS: 195.36
 ├── Step time: 0.27ms
-└── ETA: 0:00:17
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0047000.vtk in 0.003387 seconds.
+└── ETA: 0:00:30
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0007000.vtk in 0.003260 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.88277316 0.89774096
-u_x values: -0.40884835 0.1199169
-u_y values: -0.20267966 0.20544514
-u_magnitude values: 6.377543e-07 0.40886045
-
-Post-processing time: 0.078s
-
-Step 48000/100000 (48.0%)
-Simulation Statistics:
-├── Current MLUPS: 217.26
-├── Average MLUPS: 211.38
-├── Step time: 0.29ms
-└── ETA: 0:00:15
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0048000.vtk in 0.003243 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.88720554 0.9012966
-u_x values: -0.39641082 0.12138151
-u_y values: -0.19459319 0.19500035
-u_magnitude values: 4.6000912e-07 0.3964335
-
-Post-processing time: 0.065s
-
-Step 49000/100000 (49.0%)
-Simulation Statistics:
-├── Current MLUPS: 225.47
-├── Average MLUPS: 225.47
-├── Step time: 0.28ms
-└── ETA: 0:00:14
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0049000.vtk in 0.003027 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.891708 0.9052904
-u_x values: -0.38372967 0.122896194
-u_y values: -0.18739028 0.18437131
-u_magnitude values: 3.8466567e-07 0.38376415
-
-Post-processing time: 0.066s
-
-Step 50000/100000 (50.0%)
-Simulation Statistics:
-├── Current MLUPS: 225.85
-├── Average MLUPS: 224.38
-├── Step time: 0.28ms
-└── ETA: 0:00:14
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0050000.vtk in 0.003289 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.89626324 0.9093196
-u_x values: -0.3708461 0.12447674
-u_y values: -0.17988223 0.17395161
-u_magnitude values: 6.170901e-07 0.3708961
-
-Post-processing time: 0.067s
-
-Step 51000/100000 (51.0%)
-Simulation Statistics:
-├── Current MLUPS: 220.29
-├── Average MLUPS: 206.36
-├── Step time: 0.29ms
-└── ETA: 0:00:15
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0051000.vtk in 0.003552 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.90079874 0.91336554
-u_x values: -0.357782 0.12623225
-u_y values: -0.17201333 0.16574843
-u_magnitude values: 7.1683525e-07 0.35785314
+rho values: 0.8857514 1.0
+u_x values: -0.48108977 0.21212083
+u_y values: -0.42223215 0.30832765
+u_magnitude values: 0.0 0.5128378
 
 Post-processing time: 0.071s
 
-Step 52000/100000 (52.0%)
+Step 8000/100000 (8.0%)
+Simulation Statistics:
+├── Current MLUPS: 424.23
+├── Average MLUPS: 227.90
+├── Step time: 0.15ms
+└── ETA: 0:00:25
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0008000.vtk in 0.003217 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8779007 1.0
+u_x values: -0.52171516 0.2537389
+u_y values: -0.50030446 0.39429963
+u_magnitude values: 0.0 0.59801424
+
+Post-processing time: 0.065s
+
+Step 9000/100000 (9.0%)
+Simulation Statistics:
+├── Current MLUPS: 58.10
+├── Average MLUPS: 216.66
+├── Step time: 1.10ms
+└── ETA: 0:00:26
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0009000.vtk in 0.003386 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.87263143 1.0
+u_x values: -0.5719621 0.29026315
+u_y values: -0.540225 0.46604025
+u_magnitude values: 0.0 0.64414316
+
+Post-processing time: 0.069s
+
+Step 10000/100000 (10.0%)
+Simulation Statistics:
+├── Current MLUPS: 247.73
+├── Average MLUPS: 212.59
+├── Step time: 0.26ms
+└── ETA: 0:00:27
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0010000.vtk in 0.003475 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.87124187 1.0
+u_x values: -0.56634736 0.31227118
+u_y values: -0.5026846 0.43491635
+u_magnitude values: 0.0 0.6162218
+
+Post-processing time: 0.074s
+
+Step 11000/100000 (11.0%)
+Simulation Statistics:
+├── Current MLUPS: 221.20
+├── Average MLUPS: 217.49
+├── Step time: 0.29ms
+└── ETA: 0:00:26
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0011000.vtk in 0.003807 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.87063414 1.0
+u_x values: -0.545911 0.3205394
+u_y values: -0.35616663 0.32389504
+u_magnitude values: 0.0 0.5460846
+
+Post-processing time: 0.071s
+
+Step 12000/100000 (12.0%)
+Simulation Statistics:
+├── Current MLUPS: 211.45
+├── Average MLUPS: 209.81
+├── Step time: 0.30ms
+└── ETA: 0:00:26
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0012000.vtk in 0.003464 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8671193 1.0
+u_x values: -0.5514064 0.3161993
+u_y values: -0.2262201 0.25386846
+u_magnitude values: 0.0 0.5514134
+
+Post-processing time: 0.081s
+
+Step 13000/100000 (13.0%)
+Simulation Statistics:
+├── Current MLUPS: 220.47
+├── Average MLUPS: 211.35
+├── Step time: 0.29ms
+└── ETA: 0:00:26
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0013000.vtk in 0.003528 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8637718 1.0
+u_x values: -0.5504347 0.29970932
+u_y values: -0.23248294 0.24306305
+u_magnitude values: 0.0 0.5504463
+
+Post-processing time: 0.078s
+
+Step 14000/100000 (14.0%)
+Simulation Statistics:
+├── Current MLUPS: 223.04
+├── Average MLUPS: 212.21
+├── Step time: 0.29ms
+└── ETA: 0:00:25
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0014000.vtk in 0.002983 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.86051506 1.0
+u_x values: -0.54528034 0.27256015
+u_y values: -0.23840094 0.24358316
+u_magnitude values: 0.0 0.5453831
+
+Post-processing time: 0.073s
+
+Step 15000/100000 (15.0%)
+Simulation Statistics:
+├── Current MLUPS: 526.54
+├── Average MLUPS: 216.54
+├── Step time: 0.12ms
+└── ETA: 0:00:25
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0015000.vtk in 0.003219 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8573133 1.0
+u_x values: -0.5379883 0.24698037
+u_y values: -0.2437613 0.24628268
+u_magnitude values: 0.0 0.53822994
+
+Post-processing time: 0.075s
+
+Step 16000/100000 (16.0%)
+Simulation Statistics:
+├── Current MLUPS: 198.18
+├── Average MLUPS: 203.56
+├── Step time: 0.32ms
+└── ETA: 0:00:26
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0016000.vtk in 0.003492 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.854176 1.0
+u_x values: -0.5303855 0.22539422
+u_y values: -0.2483851 0.24997564
+u_magnitude values: 0.0 0.5307234
+
+Post-processing time: 0.087s
+
+Step 17000/100000 (17.0%)
 Simulation Statistics:
 ├── Current MLUPS: 231.10
-├── Average MLUPS: 216.72
+├── Average MLUPS: 203.24
 ├── Step time: 0.28ms
-└── ETA: 0:00:14
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0052000.vtk in 0.003647 seconds.
+└── ETA: 0:00:26
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0017000.vtk in 0.003747 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9053416 0.91741014
-u_x values: -0.34456477 0.12801392
-u_y values: -0.16387007 0.15714823
-u_magnitude values: 4.999334e-07 0.34466475
+rho values: 0.8511747 1.0
+u_x values: -0.52629817 0.20620224
+u_y values: -0.2522491 0.25484994
+u_magnitude values: 0.0 0.5262982
 
-Post-processing time: 0.084s
+Post-processing time: 0.073s
 
-Step 53000/100000 (53.0%)
+Step 18000/100000 (18.0%)
 Simulation Statistics:
-├── Current MLUPS: 188.84
-├── Average MLUPS: 206.25
-├── Step time: 0.34ms
-└── ETA: 0:00:14
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0053000.vtk in 0.003395 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.90988535 0.9214341
-u_x values: -0.33126307 0.12978536
-u_y values: -0.15548868 0.14815342
-u_magnitude values: 5.4203537e-07 0.33141005
-
-Post-processing time: 0.080s
-
-Step 54000/100000 (54.0%)
-Simulation Statistics:
-├── Current MLUPS: 235.35
-├── Average MLUPS: 205.35
+├── Current MLUPS: 238.70
+├── Average MLUPS: 205.10
 ├── Step time: 0.27ms
-└── ETA: 0:00:14
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0054000.vtk in 0.003863 seconds.
+└── ETA: 0:00:25
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0018000.vtk in 0.003725 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9144073 0.9254181
-u_x values: -0.31791314 0.13171731
-u_y values: -0.14687482 0.13871443
-u_magnitude values: 1.8502583e-07 0.3181037
+rho values: 0.8484161 1.0
+u_x values: -0.53247666 0.19155186
+u_y values: -0.25548878 0.26018047
+u_magnitude values: 0.0 0.53248507
 
-Post-processing time: 0.083s
+Post-processing time: 0.075s
 
-Step 55000/100000 (55.0%)
+Step 19000/100000 (19.0%)
 Simulation Statistics:
-├── Current MLUPS: 225.85
-├── Average MLUPS: 207.24
+├── Current MLUPS: 230.70
+├── Average MLUPS: 211.27
 ├── Step time: 0.28ms
-└── ETA: 0:00:13
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0055000.vtk in 0.004195 seconds.
+└── ETA: 0:00:24
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0019000.vtk in 0.003432 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9188898 0.92934316
-u_x values: -0.30450243 0.1336089
-u_y values: -0.13808267 0.1415507
-u_magnitude values: 2.8427732e-07 0.3047455
+rho values: 0.8459876 1.0
+u_x values: -0.53760856 0.18142274
+u_y values: -0.25828043 0.2647679
+u_magnitude values: 0.0 0.53761154
 
-Post-processing time: 0.078s
+Post-processing time: 0.069s
 
-Step 56000/100000 (56.0%)
+Step 20000/100000 (20.0%)
 Simulation Statistics:
-├── Current MLUPS: 227.19
-├── Average MLUPS: 202.48
-├── Step time: 0.28ms
-└── ETA: 0:00:13
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0056000.vtk in 0.003708 seconds.
+├── Current MLUPS: 406.87
+├── Average MLUPS: 220.93
+├── Step time: 0.16ms
+└── ETA: 0:00:23
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0020000.vtk in 0.004097 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.92331326 0.9331886
-u_x values: -0.29108348 0.13545892
-u_y values: -0.12914786 0.14386517
-u_magnitude values: 3.3775447e-07 0.2914245
+rho values: 0.8439189 1.0
+u_x values: -0.54162234 0.17211227
+u_y values: -0.26073185 0.2676909
+u_magnitude values: 0.0 0.5416229
+
+Post-processing time: 0.093s
+
+Step 21000/100000 (21.0%)
+Simulation Statistics:
+├── Current MLUPS: 361.91
+├── Average MLUPS: 201.58
+├── Step time: 0.18ms
+└── ETA: 0:00:25
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0021000.vtk in 0.003556 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.84215057 1.0
+u_x values: -0.5449123 0.16182968
+u_y values: -0.2628097 0.26946437
+u_magnitude values: 0.0 0.5449123
 
 Post-processing time: 0.084s
 
-Step 57000/100000 (57.0%)
+Step 22000/100000 (22.0%)
 Simulation Statistics:
-├── Current MLUPS: 64.60
-├── Average MLUPS: 204.09
-├── Step time: 0.99ms
-└── ETA: 0:00:13
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0057000.vtk in 0.003492 seconds.
+├── Current MLUPS: 212.45
+├── Average MLUPS: 200.52
+├── Step time: 0.30ms
+└── ETA: 0:00:24
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0022000.vtk in 0.003416 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.92765766 0.93693626
-u_x values: -0.27772895 0.13736206
-u_y values: -0.12352951 0.1455311
-u_magnitude values: 9.689593e-07 0.2781532
+rho values: 0.84062105 1.0
+u_x values: -0.5483279 0.1529141
+u_y values: -0.26443934 0.27081332
+u_magnitude values: 0.0 0.5483279
 
-Post-processing time: 0.084s
+Post-processing time: 0.081s
 
-Step 58000/100000 (58.0%)
+Step 23000/100000 (23.0%)
 Simulation Statistics:
-├── Current MLUPS: 242.14
-├── Average MLUPS: 202.71
-├── Step time: 0.26ms
-└── ETA: 0:00:13
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0058000.vtk in 0.003504 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.93190455 0.9405663
-u_x values: -0.26441056 0.13913405
-u_y values: -0.11977376 0.14666365
-u_magnitude values: 6.0941994e-07 0.26496348
-
-Post-processing time: 0.079s
-
-Step 59000/100000 (59.0%)
-Simulation Statistics:
-├── Current MLUPS: 235.76
-├── Average MLUPS: 204.74
+├── Current MLUPS: 238.70
+├── Average MLUPS: 211.90
 ├── Step time: 0.27ms
-└── ETA: 0:00:12
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0059000.vtk in 0.004053 seconds.
+└── ETA: 0:00:23
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0023000.vtk in 0.003362 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.93603444 0.944059
-u_x values: -0.25122398 0.14081234
-u_y values: -0.11535388 0.14754659
-u_magnitude values: 3.079731e-07 0.25192985
+rho values: 0.8393203 1.0
+u_x values: -0.5511073 0.14589031
+u_y values: -0.26558846 0.271775
+u_magnitude values: 0.0 0.5511073
 
-Post-processing time: 0.080s
+Post-processing time: 0.072s
 
-Step 60000/100000 (60.0%)
+Step 24000/100000 (24.0%)
 Simulation Statistics:
-├── Current MLUPS: 226.80
-├── Average MLUPS: 204.40
-├── Step time: 0.28ms
-└── ETA: 0:00:12
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0060000.vtk in 0.003925 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.94002444 0.9473962
-u_x values: -0.23816955 0.142402
-u_y values: -0.110565096 0.14759785
-u_magnitude values: 4.5821145e-07 0.23906082
-
-Post-processing time: 0.088s
-
-Step 61000/100000 (61.0%)
-Simulation Statistics:
-├── Current MLUPS: 233.51
-├── Average MLUPS: 206.48
+├── Current MLUPS: 238.70
+├── Average MLUPS: 205.57
 ├── Step time: 0.27ms
-└── ETA: 0:00:12
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0061000.vtk in 0.003295 seconds.
+└── ETA: 0:00:23
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0024000.vtk in 0.004142 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9438529 0.95056254
-u_x values: -0.22528163 0.14374241
-u_y values: -0.10717063 0.14690362
-u_magnitude values: 3.094435e-07 0.22641686
+rho values: 0.8382748 1.0
+u_x values: -0.5531517 0.1396626
+u_y values: -0.26626492 0.27222624
+u_magnitude values: 0.0 0.5531517
 
-Post-processing time: 0.084s
+Post-processing time: 0.085s
 
-Step 62000/100000 (62.0%)
+Step 25000/100000 (25.0%)
 Simulation Statistics:
-├── Current MLUPS: 230.90
-├── Average MLUPS: 203.62
-├── Step time: 0.28ms
-└── ETA: 0:00:11
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0062000.vtk in 0.003867 seconds.
+├── Current MLUPS: 157.96
+├── Average MLUPS: 199.33
+├── Step time: 0.41ms
+└── ETA: 0:00:24
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0025000.vtk in 0.003921 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.94735813 0.9535416
-u_x values: -0.21264575 0.14488178
-u_y values: -0.103276014 0.14539571
-u_magnitude values: 3.4425983e-07 0.21407382
+rho values: 0.837512 1.0
+u_x values: -0.55442667 0.13355134
+u_y values: -0.26648152 0.272166
+u_magnitude values: 0.0 0.55442667
 
-Post-processing time: 0.083s
+Post-processing time: 0.090s
 
-Step 63000/100000 (63.0%)
+Step 26000/100000 (26.0%)
 Simulation Statistics:
-├── Current MLUPS: 232.30
-├── Average MLUPS: 205.63
-├── Step time: 0.28ms
-└── ETA: 0:00:11
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0063000.vtk in 0.004036 seconds.
+├── Current MLUPS: 194.59
+├── Average MLUPS: 197.02
+├── Step time: 0.33ms
+└── ETA: 0:00:24
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0026000.vtk in 0.003358 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9505186 0.9563245
-u_x values: -0.20024318 0.1458046
-u_y values: -0.09916961 0.14318995
-u_magnitude values: 3.4241145e-07 0.20205459
+rho values: 0.8370445 1.0
+u_x values: -0.55496746 0.12795149
+u_y values: -0.2662243 0.27165097
+u_magnitude values: 0.0 0.55496746
 
-Post-processing time: 0.079s
+Post-processing time: 0.082s
 
-Step 64000/100000 (64.0%)
+Step 27000/100000 (27.0%)
 Simulation Statistics:
-├── Current MLUPS: 220.84
-├── Average MLUPS: 210.50
+├── Current MLUPS: 221.20
+├── Average MLUPS: 210.21
 ├── Step time: 0.29ms
-└── ETA: 0:00:10
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0064000.vtk in 0.003836 seconds.
+└── ETA: 0:00:22
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0027000.vtk in 0.003566 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.95350206 0.9589065
-u_x values: -0.1881841 0.1463719
-u_y values: -0.09629901 0.14027822
-u_magnitude values: 5.471419e-07 0.19043076
+rho values: 0.83687186 1.0
+u_x values: -0.5546867 0.12718457
+u_y values: -0.2654904 0.270694
+u_magnitude values: 0.0 0.5546867
 
-Post-processing time: 0.078s
+Post-processing time: 0.066s
 
-Step 65000/100000 (65.0%)
+Step 28000/100000 (28.0%)
 Simulation Statistics:
-├── Current MLUPS: 230.90
-├── Average MLUPS: 210.73
-├── Step time: 0.28ms
-└── ETA: 0:00:10
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0065000.vtk in 0.003655 seconds.
+├── Current MLUPS: 221.38
+├── Average MLUPS: 223.87
+├── Step time: 0.29ms
+└── ETA: 0:00:20
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0028000.vtk in 0.003156 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9562999 0.9612852
-u_x values: -0.1764592 0.1465683
-u_y values: -0.0979695 0.13638502
-u_magnitude values: 3.969333e-07 0.17927396
+rho values: 0.836992 1.0
+u_x values: -0.55354035 0.1273039
+u_y values: -0.2642744 0.26925838
+u_magnitude values: 0.0 0.55354035
+
+Post-processing time: 0.072s
+
+Step 29000/100000 (29.0%)
+Simulation Statistics:
+├── Current MLUPS: 197.02
+├── Average MLUPS: 221.11
+├── Step time: 0.32ms
+└── ETA: 0:00:20
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0029000.vtk in 0.003099 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.83739865 1.0
+u_x values: -0.5515333 0.12721573
+u_y values: -0.2625864 0.2673289
+u_magnitude values: 0.0 0.55153334
+
+Post-processing time: 0.065s
+
+Step 30000/100000 (30.0%)
+Simulation Statistics:
+├── Current MLUPS: 210.29
+├── Average MLUPS: 222.82
+├── Step time: 0.30ms
+└── ETA: 0:00:20
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0030000.vtk in 0.005124 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.83808327 1.0
+u_x values: -0.5486772 0.12690926
+u_y values: -0.26043084 0.26490745
+u_magnitude values: 0.0 0.5486772
+
+Post-processing time: 0.086s
+
+Step 31000/100000 (31.0%)
+Simulation Statistics:
+├── Current MLUPS: 227.77
+├── Average MLUPS: 205.79
+├── Step time: 0.28ms
+└── ETA: 0:00:21
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0031000.vtk in 0.004781 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.83903694 1.0
+u_x values: -0.544992 0.12637919
+u_y values: -0.25780952 0.26200867
+u_magnitude values: 0.0 0.54499215
+
+Post-processing time: 0.094s
+
+Step 32000/100000 (32.0%)
+Simulation Statistics:
+├── Current MLUPS: 255.75
+├── Average MLUPS: 203.30
+├── Step time: 0.25ms
+└── ETA: 0:00:21
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0032000.vtk in 0.003604 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.840255 1.0
+u_x values: -0.5404771 0.12562336
+u_y values: -0.25472158 0.25863183
+u_magnitude values: 0.0 0.54047716
+
+Post-processing time: 0.084s
+
+Step 33000/100000 (33.0%)
+Simulation Statistics:
+├── Current MLUPS: 223.59
+├── Average MLUPS: 203.70
+├── Step time: 0.29ms
+└── ETA: 0:00:21
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0033000.vtk in 0.005448 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8417406 1.0
+u_x values: -0.53519034 0.12465014
+u_y values: -0.25117677 0.25477552
+u_magnitude values: 0.0 0.53521204
+
+Post-processing time: 0.085s
+
+Step 34000/100000 (34.0%)
+Simulation Statistics:
+├── Current MLUPS: 231.90
+├── Average MLUPS: 202.26
+├── Step time: 0.28ms
+└── ETA: 0:00:20
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0034000.vtk in 0.003581 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8434896 1.0
+u_x values: -0.52994055 0.12346716
+u_y values: -0.24717687 0.25045228
+u_magnitude values: 0.0 0.52995974
+
+Post-processing time: 0.069s
+
+Step 35000/100000 (35.0%)
+Simulation Statistics:
+├── Current MLUPS: 245.01
+├── Average MLUPS: 220.60
+├── Step time: 0.26ms
+└── ETA: 0:00:18
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0035000.vtk in 0.003486 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.84549737 1.0
+u_x values: -0.5239242 0.122085474
+u_y values: -0.24368204 0.24714188
+u_magnitude values: 0.0 0.523941
+
+Post-processing time: 0.066s
+
+Step 36000/100000 (36.0%)
+Simulation Statistics:
+├── Current MLUPS: 145.15
+├── Average MLUPS: 213.57
+├── Step time: 0.44ms
+└── ETA: 0:00:19
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0036000.vtk in 0.004004 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8477575 1.0
+u_x values: -0.51718104 0.12050992
+u_y values: -0.24240813 0.24413837
+u_magnitude values: 0.0 0.5171948
+
+Post-processing time: 0.089s
+
+Step 37000/100000 (37.0%)
+Simulation Statistics:
+├── Current MLUPS: 60.33
+├── Average MLUPS: 207.63
+├── Step time: 1.06ms
+└── ETA: 0:00:19
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0037000.vtk in 0.004635 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8502598 1.0
+u_x values: -0.5097436 0.11874769
+u_y values: -0.24060892 0.24120568
+u_magnitude values: 0.0 0.50975424
+
+Post-processing time: 0.094s
+
+Step 38000/100000 (38.0%)
+Simulation Statistics:
+├── Current MLUPS: 246.36
+├── Average MLUPS: 209.81
+├── Step time: 0.26ms
+└── ETA: 0:00:18
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0038000.vtk in 0.003252 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.85299456 1.0
+u_x values: -0.5016573 0.116804406
+u_y values: -0.2382998 0.23776786
+u_magnitude values: 0.0 0.5016654
 
 Post-processing time: 0.077s
 
+Step 39000/100000 (39.0%)
+Simulation Statistics:
+├── Current MLUPS: 236.39
+├── Average MLUPS: 209.72
+├── Step time: 0.27ms
+└── ETA: 0:00:18
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0039000.vtk in 0.003801 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.85594654 1.0
+u_x values: -0.49296334 0.11468287
+u_y values: -0.23547369 0.2338163
+u_magnitude values: 0.0 0.49296862
+
+Post-processing time: 0.088s
+
+Step 40000/100000 (40.0%)
+Simulation Statistics:
+├── Current MLUPS: 178.79
+├── Average MLUPS: 208.01
+├── Step time: 0.36ms
+└── ETA: 0:00:18
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0040000.vtk in 0.004521 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.85910755 1.0
+u_x values: -0.4837279 0.112561345
+u_y values: -0.23213655 0.22989453
+u_magnitude values: 0.0 0.4837316
+
+Post-processing time: 0.102s
+
+Step 41000/100000 (41.0%)
+Simulation Statistics:
+├── Current MLUPS: 178.19
+├── Average MLUPS: 181.15
+├── Step time: 0.36ms
+└── ETA: 0:00:20
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0041000.vtk in 0.004756 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8624609 1.0
+u_x values: -0.47396585 0.11322124
+u_y values: -0.22843376 0.22552031
+u_magnitude values: 0.0 0.47396776
+
+Post-processing time: 0.103s
+
+Step 42000/100000 (42.0%)
+Simulation Statistics:
+├── Current MLUPS: 235.15
+├── Average MLUPS: 209.41
+├── Step time: 0.27ms
+└── ETA: 0:00:17
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0042000.vtk in 0.003561 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.86599374 1.0
+u_x values: -0.46372038 0.11395879
+u_y values: -0.22430585 0.22063604
+u_magnitude values: 0.0 0.46372083
+
+Post-processing time: 0.097s
+
+Step 43000/100000 (43.0%)
+Simulation Statistics:
+├── Current MLUPS: 338.21
+├── Average MLUPS: 208.98
+├── Step time: 0.19ms
+└── ETA: 0:00:17
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0043000.vtk in 0.003832 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.86969644 1.0
+u_x values: -0.45302597 0.11488135
+u_y values: -0.21978003 0.21559753
+u_magnitude values: 0.0 0.45302597
+
+Post-processing time: 0.102s
+
+Step 44000/100000 (44.0%)
+Simulation Statistics:
+├── Current MLUPS: 220.84
+├── Average MLUPS: 206.65
+├── Step time: 0.29ms
+└── ETA: 0:00:17
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0044000.vtk in 0.003926 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8735528 1.0
+u_x values: -0.44192737 0.11589074
+u_y values: -0.21482098 0.21014464
+u_magnitude values: 0.0 0.4419282
+
+Post-processing time: 0.101s
+
+Step 45000/100000 (45.0%)
+Simulation Statistics:
+├── Current MLUPS: 179.14
+├── Average MLUPS: 201.36
+├── Step time: 0.36ms
+└── ETA: 0:00:17
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0045000.vtk in 0.003887 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8775473 1.0
+u_x values: -0.43045607 0.11699402
+u_y values: -0.20946883 0.20433769
+u_magnitude values: 0.0 0.43045896
+
+Post-processing time: 0.089s
+
+Step 46000/100000 (46.0%)
+Simulation Statistics:
+├── Current MLUPS: 257.47
+├── Average MLUPS: 195.32
+├── Step time: 0.25ms
+└── ETA: 0:00:17
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0046000.vtk in 0.003567 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.88166374 1.0
+u_x values: -0.4186473 0.11816428
+u_y values: -0.20368397 0.1983015
+u_magnitude values: 0.0 0.41865382
+
+Post-processing time: 0.085s
+
+Step 47000/100000 (47.0%)
+Simulation Statistics:
+├── Current MLUPS: 246.14
+├── Average MLUPS: 210.47
+├── Step time: 0.26ms
+└── ETA: 0:00:16
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0047000.vtk in 0.003026 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8858822 1.0
+u_x values: -0.40654126 0.11948234
+u_y values: -0.1974583 0.19197246
+u_magnitude values: 0.0 0.40655437
+
+Post-processing time: 0.068s
+
+Step 48000/100000 (48.0%)
+Simulation Statistics:
+├── Current MLUPS: 206.41
+├── Average MLUPS: 216.41
+├── Step time: 0.31ms
+└── ETA: 0:00:15
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0048000.vtk in 0.003149 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.89018655 1.0
+u_x values: -0.3941608 0.12093704
+u_y values: -0.1908972 0.18520394
+u_magnitude values: 0.0 0.39418346
+
+Post-processing time: 0.069s
+
+Step 49000/100000 (49.0%)
+Simulation Statistics:
+├── Current MLUPS: 190.99
+├── Average MLUPS: 222.03
+├── Step time: 0.34ms
+└── ETA: 0:00:14
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0049000.vtk in 0.003787 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.8945576 1.0
+u_x values: -0.38154167 0.12243838
+u_y values: -0.18397155 0.17813703
+u_magnitude values: 0.0 0.381576
+
+Post-processing time: 0.073s
+
+Step 50000/100000 (50.0%)
+Simulation Statistics:
+├── Current MLUPS: 244.57
+├── Average MLUPS: 217.62
+├── Step time: 0.26ms
+└── ETA: 0:00:14
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0050000.vtk in 0.003623 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.898976 1.0
+u_x values: -0.36871877 0.12399913
+u_y values: -0.17666458 0.17060183
+u_magnitude values: 0.0 0.3687696
+
+Post-processing time: 0.071s
+
+Step 51000/100000 (51.0%)
+Simulation Statistics:
+├── Current MLUPS: 232.30
+├── Average MLUPS: 210.10
+├── Step time: 0.28ms
+└── ETA: 0:00:14
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0051000.vtk in 0.003190 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.90342534 1.0
+u_x values: -0.355716 0.12573896
+u_y values: -0.16907556 0.16271465
+u_magnitude values: 0.0 0.35578704
+
+Post-processing time: 0.067s
+
+Step 52000/100000 (52.0%)
+Simulation Statistics:
+├── Current MLUPS: 226.42
+├── Average MLUPS: 215.10
+├── Step time: 0.28ms
+└── ETA: 0:00:14
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0052000.vtk in 0.003274 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9078856 1.0
+u_x values: -0.342565 0.12751113
+u_y values: -0.16118827 0.15437987
+u_magnitude values: 0.0 0.34266478
+
+Post-processing time: 0.069s
+
+Step 53000/100000 (53.0%)
+Simulation Statistics:
+├── Current MLUPS: 253.34
+├── Average MLUPS: 220.15
+├── Step time: 0.25ms
+└── ETA: 0:00:13
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0053000.vtk in 0.003150 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9123402 1.0
+u_x values: -0.32934096 0.12927534
+u_y values: -0.15303355 0.14563274
+u_magnitude values: 0.0 0.32948583
+
+Post-processing time: 0.068s
+
+Step 54000/100000 (54.0%)
+Simulation Statistics:
+├── Current MLUPS: 225.66
+├── Average MLUPS: 216.77
+├── Step time: 0.28ms
+└── ETA: 0:00:13
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0054000.vtk in 0.003100 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9167709 1.0
+u_x values: -0.3160568 0.13118234
+u_y values: -0.14467344 0.13808312
+u_magnitude values: 0.0 0.31624603
+
+Post-processing time: 0.065s
+
+Step 55000/100000 (55.0%)
+Simulation Statistics:
+├── Current MLUPS: 228.35
+├── Average MLUPS: 223.23
+├── Step time: 0.28ms
+└── ETA: 0:00:12
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0055000.vtk in 0.003922 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9211539 1.0
+u_x values: -0.30272004 0.13306029
+u_y values: -0.1360838 0.14090957
+u_magnitude values: 0.0 0.30296344
+
+Post-processing time: 0.070s
+
+Step 56000/100000 (56.0%)
+Simulation Statistics:
+├── Current MLUPS: 238.06
+├── Average MLUPS: 219.53
+├── Step time: 0.27ms
+└── ETA: 0:00:12
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0056000.vtk in 0.003065 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9254747 1.0
+u_x values: -0.2893809 0.13488619
+u_y values: -0.12737086 0.14317223
+u_magnitude values: 0.0 0.28972042
+
+Post-processing time: 0.067s
+
+Step 57000/100000 (57.0%)
+Simulation Statistics:
+├── Current MLUPS: 212.11
+├── Average MLUPS: 218.80
+├── Step time: 0.30ms
+└── ETA: 0:00:12
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0057000.vtk in 0.003417 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9297118 1.0
+u_x values: -0.2760965 0.13677113
+u_y values: -0.12189984 0.14479195
+u_magnitude values: 0.0 0.27652043
+
+Post-processing time: 0.067s
+
+Step 58000/100000 (58.0%)
+Simulation Statistics:
+├── Current MLUPS: 219.03
+├── Average MLUPS: 223.40
+├── Step time: 0.29ms
+└── ETA: 0:00:12
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0058000.vtk in 0.003325 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.93384844 1.0
+u_x values: -0.2628571 0.13853067
+u_y values: -0.118242085 0.14594373
+u_magnitude values: 0.0 0.26341414
+
+Post-processing time: 0.069s
+
+Step 59000/100000 (59.0%)
+Simulation Statistics:
+├── Current MLUPS: 216.74
+├── Average MLUPS: 216.68
+├── Step time: 0.30ms
+└── ETA: 0:00:12
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0059000.vtk in 0.003219 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.93784165 1.0
+u_x values: -0.24975419 0.1401825
+u_y values: -0.11398128 0.1467869
+u_magnitude values: 0.0 0.25045666
+
+Post-processing time: 0.068s
+
+Step 60000/100000 (60.0%)
+Simulation Statistics:
+├── Current MLUPS: 237.64
+├── Average MLUPS: 220.57
+├── Step time: 0.27ms
+└── ETA: 0:00:11
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0060000.vtk in 0.003195 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9414226 1.0
+u_x values: -0.23677516 0.1417568
+u_y values: -0.109302245 0.14680707
+u_magnitude values: 0.0 0.23766789
+
+Post-processing time: 0.067s
+
+Step 61000/100000 (61.0%)
+Simulation Statistics:
+├── Current MLUPS: 219.75
+├── Average MLUPS: 220.44
+├── Step time: 0.29ms
+└── ETA: 0:00:11
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0061000.vtk in 0.003224 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9448752 1.0
+u_x values: -0.22397238 0.14308876
+u_y values: -0.106000766 0.14610684
+u_magnitude values: 0.0 0.22510089
+
+Post-processing time: 0.069s
+
+Step 62000/100000 (62.0%)
+Simulation Statistics:
+├── Current MLUPS: 230.70
+├── Average MLUPS: 224.26
+├── Step time: 0.28ms
+└── ETA: 0:00:10
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0062000.vtk in 0.003112 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9481797 1.0
+u_x values: -0.21141386 0.14420557
+u_y values: -0.10221399 0.1445831
+u_magnitude values: 0.0 0.2128396
+
+Post-processing time: 0.068s
+
+Step 63000/100000 (63.0%)
+Simulation Statistics:
+├── Current MLUPS: 234.12
+├── Average MLUPS: 220.88
+├── Step time: 0.27ms
+└── ETA: 0:00:10
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0063000.vtk in 0.003703 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9513229 1.0
+u_x values: -0.19908963 0.1451203
+u_y values: -0.09820099 0.14241469
+u_magnitude values: 0.0 0.20089792
+
+Post-processing time: 0.074s
+
+Step 64000/100000 (64.0%)
+Simulation Statistics:
+├── Current MLUPS: 238.91
+├── Average MLUPS: 214.39
+├── Step time: 0.27ms
+└── ETA: 0:00:10
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0064000.vtk in 0.003597 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9542908 1.0
+u_x values: -0.18711247 0.14567786
+u_y values: -0.09577645 0.13950251
+u_magnitude values: 0.0 0.18935256
+
+Post-processing time: 0.073s
+
+Step 65000/100000 (65.0%)
+Simulation Statistics:
+├── Current MLUPS: 220.29
+├── Average MLUPS: 191.26
+├── Step time: 0.29ms
+└── ETA: 0:00:11
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0065000.vtk in 0.003170 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.95707285 1.0
+u_x values: -0.17546251 0.14586726
+u_y values: -0.097437784 0.13562986
+u_magnitude values: 0.0 0.17826812
+
+Post-processing time: 0.069s
+
 Step 66000/100000 (66.0%)
 Simulation Statistics:
-├── Current MLUPS: 223.78
-├── Average MLUPS: 217.91
-├── Step time: 0.29ms
+├── Current MLUPS: 237.43
+├── Average MLUPS: 223.60
+├── Step time: 0.27ms
 └── ETA: 0:00:09
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0066000.vtk in 0.003044 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0066000.vtk in 0.003195 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.95890164 0.96346056
-u_x values: -0.16511841 0.14644085
-u_y values: -0.099449486 0.13168815
-u_magnitude values: 4.576035e-07 0.16864231
+rho values: 0.95966005 1.0
+u_x values: -0.16419905 0.1457285
+u_y values: -0.09890355 0.13095307
+u_magnitude values: 0.0 0.1677063
 
 Post-processing time: 0.066s
 
 Step 67000/100000 (67.0%)
 Simulation Statistics:
-├── Current MLUPS: 221.20
-├── Average MLUPS: 226.72
-├── Step time: 0.29ms
+├── Current MLUPS: 229.71
+├── Average MLUPS: 222.14
+├── Step time: 0.28ms
 └── ETA: 0:00:09
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0067000.vtk in 0.003478 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0067000.vtk in 0.003241 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.96129656 0.9654272
-u_x values: -0.15424682 0.1459284
-u_y values: -0.100706786 0.12626807
-u_magnitude values: 5.612484e-07 0.158637
+rho values: 0.9620405 1.0
+u_x values: -0.15340059 0.14522006
+u_y values: -0.10016072 0.1255883
+u_magnitude values: 0.0 0.15777102
 
-Post-processing time: 0.075s
+Post-processing time: 0.069s
 
 Step 68000/100000 (68.0%)
 Simulation Statistics:
-├── Current MLUPS: 209.30
-├── Average MLUPS: 204.95
-├── Step time: 0.31ms
+├── Current MLUPS: 225.28
+├── Average MLUPS: 222.04
+├── Step time: 0.28ms
 └── ETA: 0:00:09
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0068000.vtk in 0.003179 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0068000.vtk in 0.003679 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9634722 0.96718144
-u_x values: -0.14384419 0.1449705
-u_y values: -0.10172379 0.120015234
-u_magnitude values: 9.753367e-07 0.14933161
+rho values: 0.9642019 1.0
+u_x values: -0.14306574 0.14426245
+u_y values: -0.10116798 0.11937474
+u_magnitude values: 0.0 0.14852726
 
-Post-processing time: 0.078s
+Post-processing time: 0.082s
 
 Step 69000/100000 (69.0%)
 Simulation Statistics:
-├── Current MLUPS: 354.27
-├── Average MLUPS: 215.00
-├── Step time: 0.18ms
+├── Current MLUPS: 214.83
+├── Average MLUPS: 207.33
+├── Step time: 0.30ms
 └── ETA: 0:00:09
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0069000.vtk in 0.003563 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0069000.vtk in 0.003195 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9654181 0.96872246
-u_x values: -0.13397153 0.14356893
-u_y values: -0.102522805 0.1130794
-u_magnitude values: 4.2592177e-07 0.14400227
+rho values: 0.9661378 1.0
+u_x values: -0.13325888 0.14286725
+u_y values: -0.10195912 0.11249147
+u_magnitude values: 0.0 0.1432998
 
-Post-processing time: 0.081s
+Post-processing time: 0.070s
 
 Step 70000/100000 (70.0%)
 Simulation Statistics:
-├── Current MLUPS: 154.42
-├── Average MLUPS: 197.22
-├── Step time: 0.41ms
-└── ETA: 0:00:09
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0070000.vtk in 0.003399 seconds.
+├── Current MLUPS: 246.59
+├── Average MLUPS: 225.52
+├── Step time: 0.26ms
+└── ETA: 0:00:08
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0070000.vtk in 0.003190 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9671222 0.9700423
-u_x values: -0.12470201 0.14174172
-u_y values: -0.10308699 0.10568091
-u_magnitude values: 3.858123e-07 0.14192435
+rho values: 0.96783155 1.0
+u_x values: -0.124060005 0.14105892
+u_y values: -0.10252963 0.10516577
+u_magnitude values: 0.0 0.14124186
 
-Post-processing time: 0.076s
+Post-processing time: 0.067s
 
 Step 71000/100000 (71.0%)
 Simulation Statistics:
-├── Current MLUPS: 249.57
-├── Average MLUPS: 213.46
-├── Step time: 0.26ms
+├── Current MLUPS: 230.31
+├── Average MLUPS: 218.61
+├── Step time: 0.28ms
 └── ETA: 0:00:08
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0071000.vtk in 0.003296 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0071000.vtk in 0.003845 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9685717 0.97113645
-u_x values: -0.116131 0.13951279
-u_y values: -0.103418946 0.098114505
-u_magnitude values: 6.227667e-07 0.1395444
+rho values: 0.9692738 1.0
+u_x values: -0.115550324 0.1388429
+u_y values: -0.10285981 0.097660944
+u_magnitude values: 0.0 0.13887513
 
-Post-processing time: 0.068s
+Post-processing time: 0.074s
 
 Step 72000/100000 (72.0%)
 Simulation Statistics:
-├── Current MLUPS: 223.78
-├── Average MLUPS: 227.40
-├── Step time: 0.29ms
-└── ETA: 0:00:07
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0072000.vtk in 0.003152 seconds.
+├── Current MLUPS: 225.47
+├── Average MLUPS: 219.91
+├── Step time: 0.28ms
+└── ETA: 0:00:08
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0072000.vtk in 0.003211 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9697559 0.9720001
-u_x values: -0.10833568 0.1368964
-u_y values: -0.10352504 0.09068153
-u_magnitude values: 4.504163e-07 0.13690314
+rho values: 0.97045386 1.0
+u_x values: -0.107808694 0.13623977
+u_y values: -0.10296443 0.09029307
+u_magnitude values: 0.0 0.13624403
 
-Post-processing time: 0.067s
+Post-processing time: 0.068s
 
 Step 73000/100000 (73.0%)
 Simulation Statistics:
-├── Current MLUPS: 226.23
-├── Average MLUPS: 221.11
-├── Step time: 0.28ms
+├── Current MLUPS: 215.17
+├── Average MLUPS: 219.56
+├── Step time: 0.30ms
 └── ETA: 0:00:07
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0073000.vtk in 0.002964 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0073000.vtk in 0.003172 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9706671 0.97264683
-u_x values: -0.1014124 0.13391915
-u_y values: -0.103406124 0.08373001
-u_magnitude values: 4.3123308e-07 0.13398585
+rho values: 0.97136176 1.0
+u_x values: -0.100930646 0.13327928
+u_y values: -0.102839306 0.08339913
+u_magnitude values: 0.0 0.13334411
 
-Post-processing time: 0.067s
+Post-processing time: 0.075s
 
 Step 74000/100000 (74.0%)
 Simulation Statistics:
-├── Current MLUPS: 250.97
-├── Average MLUPS: 227.79
-├── Step time: 0.26ms
+├── Current MLUPS: 157.78
+├── Average MLUPS: 224.11
+├── Step time: 0.41ms
 └── ETA: 0:00:07
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0074000.vtk in 0.003015 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0074000.vtk in 0.003592 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9712963 0.9731286
-u_x values: -0.09547307 0.13061216
-u_y values: -0.10304668 0.08169772
-u_magnitude values: 2.6883114e-07 0.13083993
+rho values: 0.9719911 1.0
+u_x values: -0.095038235 0.12999752
+u_y values: -0.10249122 0.08122304
+u_magnitude values: 0.0 0.13022241
 
-Post-processing time: 0.067s
+Post-processing time: 0.076s
 
 Step 75000/100000 (75.0%)
 Simulation Statistics:
 ├── Current MLUPS: 232.50
-├── Average MLUPS: 226.95
+├── Average MLUPS: 216.96
 ├── Step time: 0.28ms
 └── ETA: 0:00:07
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0075000.vtk in 0.003187 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0075000.vtk in 0.003352 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9716455 0.97332186
-u_x values: -0.090657555 0.12699921
-u_y values: -0.1024634 0.08289509
-u_magnitude values: 1.8587862e-07 0.12743743
+rho values: 0.9723409 1.0
+u_x values: -0.09025536 0.12641466
+u_y values: -0.10191665 0.08241053
+u_magnitude values: 0.0 0.1268477
 
-Post-processing time: 0.066s
+Post-processing time: 0.072s
 
 Step 76000/100000 (76.0%)
 Simulation Statistics:
-├── Current MLUPS: 217.79
-├── Average MLUPS: 226.22
+├── Current MLUPS: 217.97
+├── Average MLUPS: 222.25
 ├── Step time: 0.29ms
 └── ETA: 0:00:06
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0076000.vtk in 0.002962 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0076000.vtk in 0.003864 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9717094 0.9732613
-u_x values: -0.088655345 0.12311691
-u_y values: -0.10165379 0.083737455
-u_magnitude values: 2.687156e-07 0.123836964
+rho values: 0.97240865 1.0
+u_x values: -0.08817755 0.122562036
+u_y values: -0.10111823 0.08325022
+u_magnitude values: 0.0 0.12327251
 
-Post-processing time: 0.068s
+Post-processing time: 0.074s
 
 Step 77000/100000 (77.0%)
 Simulation Statistics:
-├── Current MLUPS: 199.80
-├── Average MLUPS: 224.56
-├── Step time: 0.32ms
+├── Current MLUPS: 227.96
+├── Average MLUPS: 226.64
+├── Step time: 0.28ms
 └── ETA: 0:00:06
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0077000.vtk in 0.003039 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0077000.vtk in 0.003670 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.97148645 0.9729827
-u_x values: -0.08838735 0.11903115
-u_y values: -0.10061062 0.08422791
-u_magnitude values: 3.255411e-07 0.12002238
+rho values: 0.9721927 1.0
+u_x values: -0.08791833 0.11851327
+u_y values: -0.100076675 0.08373864
+u_magnitude values: 0.0 0.11948802
 
-Post-processing time: 0.066s
+Post-processing time: 0.069s
 
 Step 78000/100000 (78.0%)
 Simulation Statistics:
-├── Current MLUPS: 241.27
-├── Average MLUPS: 226.10
-├── Step time: 0.27ms
+├── Current MLUPS: 226.23
+├── Average MLUPS: 219.46
+├── Step time: 0.28ms
 └── ETA: 0:00:06
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0078000.vtk in 0.003135 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0078000.vtk in 0.003162 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.97098255 0.9724181
-u_x values: -0.08866533 0.1147363
-u_y values: -0.0993014 0.084380865
-u_magnitude values: 5.6908345e-07 0.11599919
+rho values: 0.97169656 1.0
+u_x values: -0.088193804 0.114245355
+u_y values: -0.09877941 0.08389345
+u_magnitude values: 0.0 0.11549257
 
-Post-processing time: 0.066s
+Post-processing time: 0.065s
 
 Step 79000/100000 (79.0%)
 Simulation Statistics:
-├── Current MLUPS: 241.71
-├── Average MLUPS: 225.04
-├── Step time: 0.26ms
-└── ETA: 0:00:05
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0079000.vtk in 0.003120 seconds.
+├── Current MLUPS: 198.77
+├── Average MLUPS: 216.55
+├── Step time: 0.32ms
+└── ETA: 0:00:06
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0079000.vtk in 0.003145 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.97019863 0.97158206
-u_x values: -0.08955869 0.110229924
-u_y values: -0.097715095 0.084214434
-u_magnitude values: 2.632623e-07 0.111756414
+rho values: 0.9709224 1.0
+u_x values: -0.08908509 0.109766036
+u_y values: -0.09720698 0.08372536
+u_magnitude values: 0.0 0.11127252
 
 Post-processing time: 0.066s
 
 Step 80000/100000 (80.0%)
 Simulation Statistics:
-├── Current MLUPS: 230.70
-├── Average MLUPS: 223.84
-├── Step time: 0.28ms
+├── Current MLUPS: 212.45
+├── Average MLUPS: 223.11
+├── Step time: 0.30ms
 └── ETA: 0:00:05
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0080000.vtk in 0.004817 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0080000.vtk in 0.003394 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.96913743 0.9705443
-u_x values: -0.09113403 0.10557036
-u_y values: -0.09586091 0.08370474
-u_magnitude values: 2.981507e-07 0.107273676
-
-Post-processing time: 0.082s
-
-Step 81000/100000 (81.0%)
-Simulation Statistics:
-├── Current MLUPS: 208.17
-├── Average MLUPS: 202.23
-├── Step time: 0.31ms
-└── ETA: 0:00:06
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0081000.vtk in 0.003745 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9678064 0.96923906
-u_x values: -0.09342644 0.10074641
-u_y values: -0.09370118 0.08279288
-u_magnitude values: 1.6423118e-07 0.10252573
-
-Post-processing time: 0.096s
-
-Step 82000/100000 (82.0%)
-Simulation Statistics:
-├── Current MLUPS: 217.09
-├── Average MLUPS: 196.89
-├── Step time: 0.29ms
-└── ETA: 0:00:05
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0082000.vtk in 0.003624 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.96608853 0.96770126
-u_x values: -0.096441686 0.095723934
-u_y values: -0.09124498 0.081408784
-u_magnitude values: 6.501486e-07 0.0981514
-
-Post-processing time: 0.086s
-
-Step 83000/100000 (83.0%)
-Simulation Statistics:
-├── Current MLUPS: 87.13
-├── Average MLUPS: 197.75
-├── Step time: 0.73ms
-└── ETA: 0:00:05
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0083000.vtk in 0.003693 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.963945 0.96600336
-u_x values: -0.100193925 0.090517074
-u_y values: -0.0884565 0.079476796
-u_magnitude values: 5.3048245e-07 0.1009782
-
-Post-processing time: 0.083s
-
-Step 84000/100000 (84.0%)
-Simulation Statistics:
-├── Current MLUPS: 342.96
-├── Average MLUPS: 203.78
-├── Step time: 0.19ms
-└── ETA: 0:00:05
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0084000.vtk in 0.003755 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9615175 0.964083
-u_x values: -0.10469981 0.085096516
-u_y values: -0.08534469 0.07692679
-u_magnitude values: 7.3066695e-07 0.10508798
-
-Post-processing time: 0.078s
-
-Step 85000/100000 (85.0%)
-Simulation Statistics:
-├── Current MLUPS: 201.45
-├── Average MLUPS: 212.15
-├── Step time: 0.32ms
-└── ETA: 0:00:04
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0085000.vtk in 0.003234 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.95881665 0.9619427
-u_x values: -0.10992959 0.07940768
-u_y values: -0.08192372 0.07368645
-u_magnitude values: 1.1306935e-06 0.11009283
-
-Post-processing time: 0.082s
-
-Step 86000/100000 (86.0%)
-Simulation Statistics:
-├── Current MLUPS: 315.18
-├── Average MLUPS: 210.20
-├── Step time: 0.20ms
-└── ETA: 0:00:04
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0086000.vtk in 0.004657 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9558566 0.9595749
-u_x values: -0.11583099 0.07341578
-u_y values: -0.07819526 0.06966905
-u_magnitude values: 4.4192348e-07 0.11587334
-
-Post-processing time: 0.094s
-
-Step 87000/100000 (87.0%)
-Simulation Statistics:
-├── Current MLUPS: 253.58
-├── Average MLUPS: 208.83
-├── Step time: 0.25ms
-└── ETA: 0:00:03
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0087000.vtk in 0.003526 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.95266837 0.9569782
-u_x values: -0.12237106 0.067058414
-u_y values: -0.074192844 0.064855374
-u_magnitude values: 3.879255e-07 0.12237138
-
-Post-processing time: 0.081s
-
-Step 88000/100000 (88.0%)
-Simulation Statistics:
-├── Current MLUPS: 229.91
-├── Average MLUPS: 216.19
-├── Step time: 0.28ms
-└── ETA: 0:00:03
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0088000.vtk in 0.004147 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9493027 0.95415384
-u_x values: -0.12948123 0.060306393
-u_y values: -0.06996706 0.05922834
-u_magnitude values: 2.7034807e-07 0.12950264
-
-Post-processing time: 0.080s
-
-Step 89000/100000 (89.0%)
-Simulation Statistics:
-├── Current MLUPS: 239.12
-├── Average MLUPS: 223.01
-├── Step time: 0.27ms
-└── ETA: 0:00:03
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0089000.vtk in 0.003119 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.94577044 0.9511132
-u_x values: -0.13704927 0.053105995
-u_y values: -0.06557494 0.055953704
-u_magnitude values: 8.4255987e-07 0.13711496
-
-Post-processing time: 0.071s
-
-Step 90000/100000 (90.0%)
-Simulation Statistics:
-├── Current MLUPS: 247.73
-├── Average MLUPS: 230.71
-├── Step time: 0.26ms
-└── ETA: 0:00:02
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0090000.vtk in 0.003134 seconds.
-Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9420045 0.9478663
-u_x values: -0.1449676 0.04541327
-u_y values: -0.06328199 0.06433115
-u_magnitude values: 6.105234e-07 0.14509809
+rho values: 0.969872 1.0
+u_x values: -0.09064671 0.105137266
+u_y values: -0.09535949 0.08322029
+u_magnitude values: 0.0 0.106820166
 
 Post-processing time: 0.069s
 
+Step 81000/100000 (81.0%)
+Simulation Statistics:
+├── Current MLUPS: 236.60
+├── Average MLUPS: 222.75
+├── Step time: 0.27ms
+└── ETA: 0:00:05
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0081000.vtk in 0.002984 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.968553 1.0
+u_x values: -0.092917524 0.10034314
+u_y values: -0.093206525 0.08231619
+u_magnitude values: 0.0 0.102102205
+
+Post-processing time: 0.071s
+
+Step 82000/100000 (82.0%)
+Simulation Statistics:
+├── Current MLUPS: 254.78
+├── Average MLUPS: 218.33
+├── Step time: 0.25ms
+└── ETA: 0:00:05
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0082000.vtk in 0.003449 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.966973 1.0
+u_x values: -0.09591643 0.09535481
+u_y values: -0.09077481 0.0809496
+u_magnitude values: 0.0 0.097655386
+
+Post-processing time: 0.067s
+
+Step 83000/100000 (83.0%)
+Simulation Statistics:
+├── Current MLUPS: 235.76
+├── Average MLUPS: 218.98
+├── Step time: 0.27ms
+└── ETA: 0:00:04
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0083000.vtk in 0.003108 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.964956 1.0
+u_x values: -0.099639185 0.0901885
+u_y values: -0.088009834 0.079037756
+u_magnitude values: 0.0 0.10043067
+
+Post-processing time: 0.068s
+
+Step 84000/100000 (84.0%)
+Simulation Statistics:
+├── Current MLUPS: 223.97
+├── Average MLUPS: 223.76
+├── Step time: 0.29ms
+└── ETA: 0:00:04
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0084000.vtk in 0.003324 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.96260726 1.0
+u_x values: -0.104106486 0.084804215
+u_y values: -0.08492614 0.07651603
+u_magnitude values: 0.0 0.104501575
+
+Post-processing time: 0.076s
+
+Step 85000/100000 (85.0%)
+Simulation Statistics:
+├── Current MLUPS: 210.95
+├── Average MLUPS: 220.07
+├── Step time: 0.30ms
+└── ETA: 0:00:04
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0085000.vtk in 0.003059 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9599926 1.0
+u_x values: -0.109291896 0.07915672
+u_y values: -0.08153763 0.073310606
+u_magnitude values: 0.0 0.10945757
+
+Post-processing time: 0.069s
+
+Step 86000/100000 (86.0%)
+Simulation Statistics:
+├── Current MLUPS: 210.12
+├── Average MLUPS: 224.37
+├── Step time: 0.30ms
+└── ETA: 0:00:03
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0086000.vtk in 0.003301 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9571236 1.0
+u_x values: -0.115150675 0.07320976
+u_y values: -0.07785052 0.06934314
+u_magnitude values: 0.0 0.11519682
+
+Post-processing time: 0.076s
+
+Step 87000/100000 (87.0%)
+Simulation Statistics:
+├── Current MLUPS: 233.71
+├── Average MLUPS: 223.02
+├── Step time: 0.27ms
+└── ETA: 0:00:03
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0087000.vtk in 0.004141 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.95403445 1.0
+u_x values: -0.1216394 0.06689983
+u_y values: -0.07390092 0.064577214
+u_magnitude values: 0.0 0.12164109
+
+Post-processing time: 0.071s
+
+Step 88000/100000 (88.0%)
+Simulation Statistics:
+├── Current MLUPS: 253.10
+├── Average MLUPS: 217.70
+├── Step time: 0.25ms
+└── ETA: 0:00:03
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0088000.vtk in 0.003094 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.95077205 1.0
+u_x values: -0.12869705 0.06019477
+u_y values: -0.06972078 0.059000846
+u_magnitude values: 0.0 0.12871458
+
+Post-processing time: 0.065s
+
+Step 89000/100000 (89.0%)
+Simulation Statistics:
+├── Current MLUPS: 236.18
+├── Average MLUPS: 222.08
+├── Step time: 0.27ms
+└── ETA: 0:00:03
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0089000.vtk in 0.003101 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.9473478 1.0
+u_x values: -0.13621132 0.053042006
+u_y values: -0.065378524 0.052671358
+u_magnitude values: 0.0 0.13627152
+
+Post-processing time: 0.065s
+
+Step 90000/100000 (90.0%)
+Simulation Statistics:
+├── Current MLUPS: 229.71
+├── Average MLUPS: 221.87
+├── Step time: 0.28ms
+└── ETA: 0:00:02
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0090000.vtk in 0.003081 seconds.
+Saving image with vmin=0.0, vmax=0.6000000000000001
+rho values: 0.94369626 1.0
+u_x values: -0.14408512 0.045391414
+u_y values: -0.060988724 0.046028115
+u_magnitude values: 0.0 0.144207
+
+Post-processing time: 0.070s
+
 Step 91000/100000 (91.0%)
 Simulation Statistics:
-├── Current MLUPS: 235.97
-├── Average MLUPS: 221.88
-├── Step time: 0.27ms
+├── Current MLUPS: 231.30
+├── Average MLUPS: 221.71
+├── Step time: 0.28ms
 └── ETA: 0:00:02
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0091000.vtk in 0.003453 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0091000.vtk in 0.003163 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.93801385 0.9443673
-u_x values: -0.15311868 0.037039503
-u_y values: -0.07247297 0.07303841
-u_magnitude values: 6.713358e-07 0.15326367
+rho values: 0.9398202 1.0
+u_x values: -0.15220255 0.04785257
+u_y values: -0.056726575 0.052126072
+u_magnitude values: 0.0 0.15234318
 
-Post-processing time: 0.073s
+Post-processing time: 0.070s
 
 Step 92000/100000 (92.0%)
 Simulation Statistics:
-├── Current MLUPS: 221.20
-├── Average MLUPS: 228.05
+├── Current MLUPS: 221.56
+├── Average MLUPS: 218.68
 ├── Step time: 0.29ms
 └── ETA: 0:00:02
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0092000.vtk in 0.003520 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0092000.vtk in 0.003229 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9338725 0.94061935
-u_x values: -0.16115579 0.02758557
-u_y values: -0.08226667 0.08210546
-u_magnitude values: 1.4869988e-06 0.16131966
+rho values: 0.93581986 1.0
+u_x values: -0.16024226 0.051081065
+u_y values: -0.059994496 0.0591814
+u_magnitude values: 0.0 0.1603958
 
-Post-processing time: 0.066s
+Post-processing time: 0.065s
 
 Step 93000/100000 (93.0%)
 Simulation Statistics:
-├── Current MLUPS: 222.67
-├── Average MLUPS: 225.22
+├── Current MLUPS: 218.86
+├── Average MLUPS: 220.50
 ├── Step time: 0.29ms
-└── ETA: 0:00:01
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0093000.vtk in 0.003218 seconds.
+└── ETA: 0:00:02
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0093000.vtk in 0.003098 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.92927086 0.9369501
-u_x values: -0.16867426 0.016564427
-u_y values: -0.09259677 0.09169124
-u_magnitude values: 4.4793865e-06 0.1690149
+rho values: 0.9313365 1.0
+u_x values: -0.16780816 0.054446734
+u_y values: -0.06814638 0.06677312
+u_magnitude values: 0.0 0.16796961
 
-Post-processing time: 0.064s
+Post-processing time: 0.065s
 
 Step 94000/100000 (94.0%)
 Simulation Statistics:
-├── Current MLUPS: 255.51
-├── Average MLUPS: 219.98
-├── Step time: 0.25ms
+├── Current MLUPS: 206.09
+├── Average MLUPS: 223.07
+├── Step time: 0.31ms
 └── ETA: 0:00:01
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0094000.vtk in 0.003605 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0094000.vtk in 0.003252 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9244823 0.9330727
-u_x values: -0.17517284 0.00946725
-u_y values: -0.10321871 0.101882994
-u_magnitude values: 2.4513793e-06 0.18525027
+rho values: 0.92666227 1.0
+u_x values: -0.17442703 0.057932846
+u_y values: -0.07663058 0.07499291
+u_magnitude values: 0.0 0.17461427
 
-Post-processing time: 0.067s
+Post-processing time: 0.066s
 
 Step 95000/100000 (95.0%)
 Simulation Statistics:
-├── Current MLUPS: 230.90
-├── Average MLUPS: 230.76
-├── Step time: 0.28ms
+├── Current MLUPS: 163.74
+├── Average MLUPS: 215.79
+├── Step time: 0.39ms
 └── ETA: 0:00:01
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0095000.vtk in 0.003465 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0095000.vtk in 0.003094 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.91956085 0.9289727
-u_x values: -0.18719974 0.011583689
-u_y values: -0.11393359 0.112677574
-u_magnitude values: 7.1973627e-06 0.20176111
+rho values: 0.92185307 1.0
+u_x values: -0.18577921 0.061525315
+u_y values: -0.0852716 0.083845615
+u_magnitude values: 0.0 0.18585595
 
-Post-processing time: 0.067s
+Post-processing time: 0.068s
 
 Step 96000/100000 (96.0%)
 Simulation Statistics:
-├── Current MLUPS: 248.41
-├── Average MLUPS: 226.24
+├── Current MLUPS: 247.73
+├── Average MLUPS: 220.82
 ├── Step time: 0.26ms
 └── ETA: 0:00:01
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0096000.vtk in 0.003299 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0096000.vtk in 0.003324 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.91454476 0.9247066
-u_x values: -0.21048513 0.017157428
-u_y values: -0.12475536 0.1242663
-u_magnitude values: 4.574561e-06 0.2184704
+rho values: 0.91694826 1.0
+u_x values: -0.20891392 0.065203026
+u_y values: -0.094073355 0.09349014
+u_magnitude values: 0.0 0.20898835
 
 Post-processing time: 0.067s
 
 Step 97000/100000 (97.0%)
 Simulation Statistics:
-├── Current MLUPS: 209.47
-├── Average MLUPS: 231.06
-├── Step time: 0.31ms
+├── Current MLUPS: 222.85
+├── Average MLUPS: 223.64
+├── Step time: 0.29ms
 └── ETA: 0:00:00
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0097000.vtk in 0.003791 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0097000.vtk in 0.003121 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9094563 0.92033154
-u_x values: -0.23454282 0.023997629
-u_y values: -0.13576882 0.13722408
-u_magnitude values: 1.9772056e-06 0.23529829
+rho values: 0.9119807 1.0
+u_x values: -0.23284069 0.06894804
+u_y values: -0.12917498 0.104463555
+u_magnitude values: 0.0 0.23290865
 
-Post-processing time: 0.075s
+Post-processing time: 0.065s
 
 Step 98000/100000 (98.0%)
 Simulation Statistics:
-├── Current MLUPS: 231.30
-├── Average MLUPS: 228.79
-├── Step time: 0.28ms
+├── Current MLUPS: 216.56
+├── Average MLUPS: 219.98
+├── Step time: 0.30ms
 └── ETA: 0:00:00
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0098000.vtk in 0.003595 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0098000.vtk in 0.003104 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.9043317 0.91584855
-u_x values: -0.25889096 0.032342155
-u_y values: -0.17517251 0.1522494
-u_magnitude values: 4.78882e-07 0.25895235
+rho values: 0.9069984 1.0
+u_x values: -0.25706983 0.07274263
+u_y values: -0.17222093 0.117412575
+u_magnitude values: 0.0 0.25713268
 
-Post-processing time: 0.068s
+Post-processing time: 0.071s
 
 Step 99000/100000 (99.0%)
 Simulation Statistics:
-├── Current MLUPS: 249.34
-├── Average MLUPS: 225.34
-├── Step time: 0.26ms
+├── Current MLUPS: 215.52
+├── Average MLUPS: 219.65
+├── Step time: 0.30ms
 └── ETA: 0:00:00
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0099000.vtk in 0.003276 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0099000.vtk in 0.003859 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.8991605 0.91124827
-u_x values: -0.28299806 0.042206094
-u_y values: -0.21515115 0.16939892
-u_magnitude values: 1.3000961e-06 0.2830506
+rho values: 0.9020036 1.0
+u_x values: -0.2810814 0.076571874
+u_y values: -0.21181175 0.13418795
+u_magnitude values: 0.0 0.28113273
 
-Post-processing time: 0.070s
+Post-processing time: 0.069s
 
 Step 100000/100000 (100.0%)
 Simulation Statistics:
-├── Current MLUPS: 235.76
-├── Average MLUPS: 229.95
-├── Step time: 0.27ms
+├── Current MLUPS: 225.85
+├── Average MLUPS: 222.95
+├── Step time: 0.28ms
 └── ETA: 0:00:00
-Saved ../aneurysm_simulation_results/vtk/aneurysm_0100000.vtk in 0.003146 seconds.
+Saved ../aneurysm_simulation_results/vtk/aneurysm_0100000.vtk in 0.003134 seconds.
 Saving image with vmin=0.0, vmax=0.6000000000000001
-rho values: 0.89392805 0.9067783
-u_x values: -0.30636698 0.054086804
-u_y values: -0.25060543 0.1877903
-u_magnitude values: 4.5439256e-06 0.31583235
+rho values: 0.8969827 1.0
+u_x values: -0.30437645 0.080423735
+u_y values: -0.24725199 0.16035871
+u_magnitude values: 0.0 0.3118961
 
-Post-processing time: 0.069s
+Post-processing time: 0.065s
 
 === Simulation Summary ===
 Grid size: 302x212 = 64024 nodes
@@ -1559,9 +1559,9 @@ Timing Breakdown:
 └── Post-processing: 0:00:08
 
 Performance Metrics:
-├── Average MLUPS: 212.33
-├── Best MLUPS: 697.50
+├── Average MLUPS: 211.53
+├── Best MLUPS: 716.10
 ├── Worst MLUPS: 0.18
 ├── Avg step time: 0.30ms
 └── Avg post-process time: 0.081s
-Parameters and performance metrics saved to ../aneurysm_simulation_results/parameters/aneurysm_params 14:26:50 01-05-2025.json
+Parameters and performance metrics saved to ../aneurysm_simulation_results/parameters/aneurysm_params 14:33:28 01-05-2025.json
