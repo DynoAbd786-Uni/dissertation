@@ -19,6 +19,7 @@ import jax
 
 from boundary_conditions.direct_bc import TimeDependentZouHeBC
 from stepper.custom_nse_stepper import CustomNSEStepper
+from utils.wss_calculation import calculate_wss as wss_calculator
 
 
 MM_TO_M = 0.001
@@ -221,6 +222,11 @@ class AneurysmSimulation2D:
     def setup_boundary_conditions(self):
         inlet, outlet, walls = self.define_boundary_indices()
         
+        # Save the boundary indices for later use in post-processing
+        self.inlet_indices = inlet
+        self.outlet_indices = outlet
+        self.wall_indices = walls
+        
         # Inlet: use new direct BC
         bc_inlet = TimeDependentZouHeBC(
             bc_type="velocity",
@@ -232,18 +238,12 @@ class AneurysmSimulation2D:
             frequency=1.0
         )
 
-
         # Walls: no-slip boundary condition
         bc_walls = FullwayBounceBackBC(indices=walls)
-        
-        # Inlet: constant velocity profile
-        # bc_inlet = TimeDependentZouHeBC("velocity", profile=self.bc_profile(), indices=inlet)
-        # bc_inlet = ZouHeBC("velocity", prescribed_value=(0.0, self.u_max), indices=inlet)
         
         # Outlet: zero-gradient outflow
         bc_outlet = ExtrapolationOutflowBC(indices=outlet)
         
-        # self.boundary_conditions = [bc_inlet]
         self.boundary_conditions = [bc_walls, bc_inlet, bc_outlet]
 
     def setup_stepper(self):
@@ -255,6 +255,29 @@ class AneurysmSimulation2D:
             collision_type="BGKNonNewtonian"
         )
     
+    def run(self, num_steps, post_process_interval=None):
+        """Run simulation with detailed performance tracking"""
+
+        # At the start of your run method
+        print(f"Starting simulation with backend: {self.backend}")
+        print(f"Boundary conditions: {[type(bc).__name__ for bc in self.boundary_conditions]}")
+        
+        # Use class attribute for post_process_interval if not specified
+        if post_process_interval is None:
+            post_process_interval = self.post_process_interval
+            print(f"Using class default post-processing interval: {post_process_interval} steps")
+            
+        # Initialize timing variables
+        start_time = time.time()
+        last_sim_step_time = start_time
+        total_sim_time = 0
+        total_post_process_time = 0
+        post_process_calls = 0
+        total_nodes = self.grid_shape[0] * self.grid_shape[1]
+        
+        # Performance tracking lists
+        step_times = []
+        mlups_history = []
     
     # PARTIALLY COMPLETED POUSIELLE FLOW PROFILE
     # def bc_profile(self):
@@ -293,107 +316,6 @@ class AneurysmSimulation2D:
     #         return bc_profile_jax
     #     elif self.backend == ComputeBackend.WARP:
     #         return bc_profile_warp
-
-    def run(self, num_steps, post_process_interval=None):
-        """Run simulation with detailed performance tracking"""
-
-        # At the start of your run method
-        print(f"Starting simulation with backend: {self.backend}")
-        print(f"Boundary conditions: {[type(bc).__name__ for bc in self.boundary_conditions]}")
-        
-        # Use class attribute for post_process_interval if not specified
-        if post_process_interval is None:
-            post_process_interval = self.post_process_interval
-            print(f"Using class default post-processing interval: {post_process_interval} steps")
-            
-        # Initialize timing variables
-        start_time = time.time()
-        last_sim_step_time = start_time
-        total_sim_time = 0
-        total_post_process_time = 0
-        post_process_calls = 0
-        total_nodes = self.grid_shape[0] * self.grid_shape[1]
-        
-        # Performance tracking lists
-        step_times = []
-        mlups_history = []
-        
-        for i in range(num_steps + 1):
-            # Measure pure simulation step time
-            step_start = time.time()
-            self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, i)
-            self.f_0, self.f_1 = self.f_1, self.f_0
-            step_end = time.time()
-            
-            # Track step performance
-            step_time = step_end - step_start
-            step_times.append(step_time)
-            total_sim_time += step_time
-            
-            # Calculate running MLUPS
-            current_mlups = (total_nodes / step_time) / 1e6
-            mlups_history.append(current_mlups)
-
-            if i % post_process_interval == 0:
-                # Calculate statistics
-                avg_step_time = sum(step_times[-post_process_interval:]) / len(step_times[-post_process_interval:])
-                avg_mlups = (total_nodes / avg_step_time) / 1e6
-                remaining_steps = num_steps - i
-                estimated_seconds = remaining_steps * avg_step_time
-                
-                # Status update
-                print(f"\nStep {i}/{num_steps} ({(i/num_steps)*100:.1f}%)")
-                print(f"Simulation Statistics:")
-                print(f"├── Current MLUPS: {current_mlups:.2f}")
-                print(f"├── Average MLUPS: {avg_mlups:.2f}")
-                print(f"├── Step time: {step_time*1000:.2f}ms")
-                print(f"└── ETA: {str(timedelta(seconds=int(estimated_seconds)))}")
-                
-                # Post-processing
-                post_start = time.time()
-                self.post_process(i)
-                post_time = time.time() - post_start
-                total_post_process_time += post_time
-                post_process_calls += 1
-                print(f"\nPost-processing time: {post_time:.3f}s")
-        
-        # Final statistics
-        total_time = time.time() - start_time
-        avg_mlups = (total_nodes * num_steps / total_sim_time) / 1e6
-        avg_post_time = total_post_process_time / post_process_calls if post_process_calls > 0 else 0
-        
-        print("\n=== Simulation Summary ===")
-        print(f"Grid size: {self.grid_shape[0]}x{self.grid_shape[1]} = {total_nodes} nodes")
-        print(f"\nTiming Breakdown:")
-        print(f"├── Total time: {str(timedelta(seconds=int(total_time)))}")
-        print(f"├── Pure simulation: {str(timedelta(seconds=int(total_sim_time)))}")
-        print(f"└── Post-processing: {str(timedelta(seconds=int(total_post_process_time)))}")
-        
-        print(f"\nPerformance Metrics:")
-        print(f"├── Average MLUPS: {avg_mlups:.2f}")
-        print(f"├── Best MLUPS: {max(mlups_history):.2f}")
-        print(f"├── Worst MLUPS: {min(mlups_history):.2f}")
-        print(f"├── Avg step time: {(total_sim_time/num_steps)*1000:.2f}ms")
-        print(f"└── Avg post-process time: {avg_post_time:.3f}s")
-
-        simulated_total_time = self.dt * num_steps
-
-        # Save final performance metrics
-        self.save_simulation_parameters(
-            final_metrics={
-                "total_time": total_time,
-                "total_sim_time": total_sim_time,
-                "total_post_process_time": total_post_process_time,
-                "avg_mlups": avg_mlups,
-                "best_mlups": max(mlups_history),
-                "worst_mlups": min(mlups_history),
-                "avg_step_time_ms": (total_sim_time/num_steps)*1000,
-                "avg_post_process_time": avg_post_time,
-                "total_steps": num_steps,
-                "post_process_calls": post_process_calls,
-                "total_simulation_time": simulated_total_time
-            }
-        )
 
     def run_for_duration(self, duration_seconds, warmup_seconds=0.0, post_process_interval=None):
         """Run simulation for a specific duration in seconds with an optional additional warmup period.
@@ -542,6 +464,15 @@ class AneurysmSimulation2D:
         return total_steps
 
     def post_process(self, i):
+        """
+        Post-process the simulation results and save visualization files.
+        
+        Args:
+            i: Current timestep
+            
+        Returns:
+            float: Time taken for post-processing
+        """
         # Tracking post processing time
         post_process_start = time.time()
 
@@ -560,10 +491,39 @@ class AneurysmSimulation2D:
 
         rho, u = macro(f_0)
 
+        # Calculate Wall Shear Stress (WSS) using the external function
+        carreau_yasuda_params = {}
+        
+        # Extract Carreau-Yasuda parameters from collision operator if available
+        if hasattr(self.stepper, 'collision') and hasattr(self.stepper.collision, 'mu_0_lu'):
+            carreau_yasuda_params = {
+                'mu_0': self.stepper.collision.mu_0_lu,
+                'mu_inf': self.stepper.collision.mu_inf_lu,
+                'lambda_cy': self.stepper.collision.lambda_cy_lu * self.stepper.collision.dt_physical,
+                'n': self.stepper.collision.n,
+                'a': self.stepper.collision.a
+            }
+            
+        # Call the external WSS calculation function
+        wss, wall_mask = wss_calculator(
+            velocity_field=u,
+            wall_indices=self.wall_indices,
+            dx_physical=self.dx,
+            dt_physical=self.dt,
+            **carreau_yasuda_params
+        )
+
+        # Save full grid dimensions for reference before cropping
+        full_shape = wss.shape if wss is not None else None
+
         # remove boundary cells
         rho = rho[:, 1:-1, 1:-1]
         u = u[:, 1:-1, 1:-1]
         u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
+        
+        # Crop the WSS field to match other fields' dimensions
+        if wss is not None:
+            wss = wss[1:-1, 1:-1]
         
         # Protect against division by zero when converting to physical units
         dt_safe = max(self.dt, 1.0e-10)  # Ensure dt is not zero
@@ -575,6 +535,13 @@ class AneurysmSimulation2D:
             "u_y": u[1] * (self.dx/dt_safe), 
             "u_magnitude": u_magnitude_physical
         }
+
+        # Add WSS to fields if available
+        if wss is not None:
+            fields["wss"] = wss
+            print("WSS values:", np.min(wss), np.max(wss))
+            print(f"WSS field shape (after cropping): {wss.shape}")
+            print(f"Other fields shape: {u_magnitude_physical.shape}")
 
         # Save VTK file in vtk subdirectory
         vtk_path = self.vtk_dir
@@ -590,8 +557,7 @@ class AneurysmSimulation2D:
         print("u_y values:", np.min(fields["u_y"]), np.max(fields["u_y"]))
         print("u_magnitude values:", np.min(fields["u_magnitude"]), np.max(fields["u_magnitude"]))
 
-        # print(self.img_dir)
-
+        # Generate velocity field image
         save_image(
             fields["u_magnitude"],
             prefix=str(self.img_dir / f"aneurysm_"),
@@ -599,10 +565,23 @@ class AneurysmSimulation2D:
             vmin=vmin,
             vmax=vmax
         )
+        
+        # Generate WSS image if available
+        if wss is not None:
+            # Use a reasonable scale for WSS
+            wss_vmax = np.max(wss) * 1.1  # 10% margin
+            save_image(
+                fields["wss"],
+                prefix=str(self.img_dir / f"aneurysm_wss_"),
+                timestep=i,
+                vmin=0.0,
+                vmax=wss_vmax,
+                cmap='hot'  # Use a different colormap for WSS
+            )
                 
         post_process_time = time.time() - post_process_start
         return post_process_time
-
+    
     def save_simulation_parameters(self, filename_prefix="aneurysm_params", final_metrics=None):
         """Save simulation parameters and final metrics to JSON file
         
