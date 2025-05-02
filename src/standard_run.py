@@ -217,7 +217,7 @@ if __name__ == "__main__":
     
     # Run simulation for 1 second with warmup
     simulation.run_for_duration(
-        duration_seconds=0.1,
+        duration_seconds=1.0,
         warmup_seconds=1.0    # Run for 1.0 seconds before starting visualization
     )
 
