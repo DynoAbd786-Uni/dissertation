@@ -10,5 +10,11 @@
 **/*.py[cod]
 **/*$py.class
 
+# Jupyter Notebook checkpoints
+**/.ipynb_checkpoints
+# Jupyter Notebook outputs
+**/*.ipynb_checkpoints
+
+
 # Simulation output directories
 aneurysm_simulation_results/
