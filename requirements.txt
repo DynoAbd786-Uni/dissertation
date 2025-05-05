@@ -1,4 +1,12 @@
 xlb[cuda]==0.2.1
-PyQt5>=5.15.0
-pyvista>=0.33.0
 numpy>=1.20.0
+pandas>=1.2.0
+matplotlib>=3.5.0
+PyQt6>=6.2.0
+pyvista>=0.33.0
+vtk>=9.1.0
+warp-lang>=1.4.0
+jax>=0.4.0
+jaxlib>=0.4.0
+scipy>=1.7.0
+ipywidgets>=7.7.0
