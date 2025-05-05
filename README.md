@@ -9,6 +9,9 @@ This repository contains a comprehensive solution for simulating and visualizing
 
 - [Requirements](#requirements)
 - [Quick Start with Docker](#quick-start-with-docker)
+  - [Using build_and_run_docker.py Script](#using-build_and_run_dockerpy-script)
+  - [Using Docker Compose](#using-docker-compose)
+  - [Manual Docker Commands](#manual-docker-commands)
 - [Simulation Source Code](#simulation-source-code)
   - [Features](#features)
   - [Directory Structure](#directory-structure)
@@ -38,9 +41,33 @@ All dependencies are handled by the Docker container. If running locally:
 
 ## Quick Start with Docker
 
-The easiest way to run simulations and visualizations is using the provided Docker container.
+The easiest way to run simulations and visualizations is using the provided Docker container. There are multiple ways to build and run the container:
 
-### 1. Build and Start the Container
+### Using build_and_run_docker.py Script
+
+The `build_and_run_docker.py` script provides a convenient way to build and run Docker containers with various configurations.
+
+```bash
+# Build and run in standard mode (runs the default simulation)
+python build_and_run_docker.py
+
+# Build the image only
+python build_and_run_docker.py --build
+
+# Run in interactive mode (bash shell)
+python build_and_run_docker.py --run --mode interactive
+
+# Run in Jupyter mode (starts a notebook server)
+python build_and_run_docker.py --run --mode jupyter
+
+# Run a specific simulation script
+python build_and_run_docker.py --run --script simulation_src/standard_run.py
+
+# Run without GPU support
+python build_and_run_docker.py --run --no-gpu
+```
+
+### Using Docker Compose
 
 ```bash
 # Build and start the container in detached mode
@@ -48,36 +75,28 @@ docker-compose up -d
 
 # Check if the container is running
 docker ps
-```
 
-### 2. Run a Standard Simulation
-
-```bash
-# Execute the standard simulation
-docker exec dissertation python simulation_src/standard_run.py
-
-# Or with custom parameters
-docker exec dissertation python simulation_src/standard_run.py --reynolds 400 --steps 200000 --save-interval 1000
-```
-
-### 3. Start Jupyter for Visualization
-
-```bash
-# Start Jupyter Notebook server
-docker exec -it dissertation jupyter notebook --ip 0.0.0.0 --port 8888 --no-browser --allow-root
-
-# Access the notebook in your browser at the provided URL
-```
-
-### 4. Accessing Results
-
-Simulation results are stored in the `results/` directory, which is mounted as a volume in the Docker container.
-
-### 5. Stopping the Container
-
-```bash
 # Stop the container
 docker-compose down
+```
+
+### Manual Docker Commands
+
+```bash
+# Build the Docker image
+docker build -t dissertation .
+
+# Run with GPU support
+docker run --gpus all -v ${PWD}:/app -v ${PWD}/results:/app/results dissertation
+
+# Run in interactive mode
+docker run -it --gpus all -v ${PWD}:/app -v ${PWD}/results:/app/results dissertation /bin/bash
+
+# Run Jupyter Notebook
+docker run -p 8888:8888 --gpus all -v ${PWD}:/app -v ${PWD}/results:/app/results dissertation jupyter notebook --ip=0.0.0.0 --allow-root --no-browser
+
+# Execute a command in a running container
+docker exec dissertation python simulation_src/standard_run.py
 ```
 
 ## Simulation Source Code
