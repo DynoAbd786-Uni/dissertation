@@ -504,8 +504,8 @@ class AneurysmSimulation2D:
                 'a': self.stepper.collision.a
             }
             
-        # Call the external WSS calculation function
-        wss, wall_mask = wss_calculator(
+        # Call the external WSS calculation function with updated return values
+        wss_magnitude, wss_x, wss_y, wall_mask = wss_calculator(
             velocity_field=u,
             wall_indices=self.wall_indices,
             dx_physical=self.dx,
@@ -514,16 +514,20 @@ class AneurysmSimulation2D:
         )
 
         # Save full grid dimensions for reference before cropping
-        full_shape = wss.shape if wss is not None else None
+        full_shape = wss_magnitude.shape if wss_magnitude is not None else None
 
         # remove boundary cells
         rho = rho[:, 1:-1, 1:-1]
         u = u[:, 1:-1, 1:-1]
         u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
         
-        # Crop the WSS field to match other fields' dimensions
-        if wss is not None:
-            wss = wss[1:-1, 1:-1]
+        # Crop the WSS fields and wall mask to match other fields' dimensions
+        if wss_magnitude is not None:
+            wss_magnitude = wss_magnitude[1:-1, 1:-1]
+            wss_x = wss_x[1:-1, 1:-1]
+            wss_y = wss_y[1:-1, 1:-1]
+            # Also crop the wall mask
+            wall_mask = wall_mask[1:-1, 1:-1]
         
         # Protect against division by zero when converting to physical units
         dt_safe = max(self.dt, 1.0e-10)  # Ensure dt is not zero
@@ -536,11 +540,19 @@ class AneurysmSimulation2D:
             "u_magnitude": u_magnitude_physical
         }
 
-        # Add WSS to fields if available
-        if wss is not None:
-            fields["wss"] = wss
-            print("WSS values:", np.min(wss), np.max(wss))
-            print(f"WSS field shape (after cropping): {wss.shape}")
+        # Add WSS fields and wall mask if available
+        if wss_magnitude is not None:
+            fields["wss_magnitude"] = wss_magnitude
+            fields["wss_x"] = wss_x
+            fields["wss_y"] = wss_y
+            # Convert boolean wall mask to integer (0/1) for VTK output
+            fields["wall_mask"] = wall_mask.astype(np.int32)
+            
+            print(f"WSS magnitude range: {np.min(wss_magnitude):.3e} to {np.max(wss_magnitude):.3e} Pa")
+            print(f"WSS x-component range: {np.min(wss_x):.3e} to {np.max(wss_x):.3e} Pa")
+            print(f"WSS y-component range: {np.min(wss_y):.3e} to {np.max(wss_y):.3e} Pa")
+            print(f"Wall cells count: {np.sum(wall_mask)}")
+            print(f"WSS field shape (after cropping): {wss_magnitude.shape}")
             print(f"Other fields shape: {u_magnitude_physical.shape}")
 
         # Save VTK file in vtk subdirectory
@@ -566,17 +578,27 @@ class AneurysmSimulation2D:
             vmax=vmax
         )
         
-        # Generate WSS image if available
-        if wss is not None:
+        # Generate WSS magnitude image if available
+        if wss_magnitude is not None:
             # Use a reasonable scale for WSS
-            wss_vmax = np.max(wss) * 1.1  # 10% margin
+            wss_vmax = np.max(wss_magnitude) * 1.1  # 10% margin
             save_image(
-                fields["wss"],
+                fields["wss_magnitude"],
                 prefix=str(self.img_dir / f"aneurysm_wss_"),
                 timestep=i,
                 vmin=0.0,
                 vmax=wss_vmax,
                 cmap='hot'  # Use a different colormap for WSS
+            )
+            
+            # Generate wall mask image
+            save_image(
+                fields["wall_mask"],
+                prefix=str(self.img_dir / f"aneurysm_wall_"),
+                timestep=i,
+                vmin=0.0,
+                vmax=1.0,
+                cmap='binary'  # Use binary colormap for wall mask
             )
                 
         post_process_time = time.time() - post_process_start
