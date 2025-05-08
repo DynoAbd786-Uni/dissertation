@@ -4,6 +4,8 @@
 **/*.json
 **/*.zip
 **/*.tar.gz
+**/*.npy
+**/*.npz
 
 # Python cache files
 **/__pycache__/
