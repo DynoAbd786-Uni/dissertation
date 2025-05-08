@@ -10,3 +10,5 @@ jax>=0.4.0
 jaxlib>=0.4.0
 scipy>=1.7.0
 ipywidgets>=7.7.0
+tdqm>=1.0.0
+seaborn>=0.11.0
