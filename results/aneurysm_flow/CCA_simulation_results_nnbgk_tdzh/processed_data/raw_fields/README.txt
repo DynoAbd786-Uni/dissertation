@@ -1,19 +1,19 @@
-standard_zouhe_non_newtonian_bgk Field Data
-===========================================
+CCA_simulation_results_nnbgk_tdzh Field Data
+============================================
 
-Date: 2025-05-10 15:08:19
+Date: 2025-05-10 15:09:21
 Number of frames: 101
 
 Available fields:
 - dimensions: (3,)
-- rho: (101, 328, 749)
-- u_x: (101, 328, 749)
-- u_y: (101, 328, 749)
-- u_magnitude: (101, 328, 749)
-- wss_magnitude: (101, 328, 749)
-- wss_x: (101, 328, 749)
-- wss_y: (101, 328, 749)
-- wall_mask: (101, 328, 749)
+- rho: (101, 528, 749)
+- u_x: (101, 528, 749)
+- u_y: (101, 528, 749)
+- u_magnitude: (101, 528, 749)
+- wss_magnitude: (101, 528, 749)
+- wss_x: (101, 528, 749)
+- wss_y: (101, 528, 749)
+- wall_mask: (101, 528, 749)
 
 Notes:
 - These files contain 3D arrays with dimensions [frames, height, width]

@@ -25,7 +25,7 @@ from utils.wss_calculation import calculate_wss as wss_calculator
 MM_TO_M = 0.001
 
 class AneurysmSimulation2D:
-    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params):
+    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params, output_path=None):
         # initialize backend
         xlb.init(
             velocity_set=velocity_set,
@@ -56,28 +56,32 @@ class AneurysmSimulation2D:
         self.post_process_interval = max(1, int(1 / (self.input_params.get("fps", 100) * self.dt)))
 
         # Setup output directories
-        self.output_dir = Path("../aneurysm_simulation_results")
+        if output_path is not None:
+            # Use the provided output path
+            self.output_dir = Path(output_path)
+        else:
+            # Default output directory
+            self.output_dir = Path("../aneurysm_simulation_results")
+            
         self.vtk_dir = self.output_dir / "vtk"
         self.img_dir = self.output_dir / "images"
         self.params_dir = self.output_dir / "parameters"
         
-       # Check if directories exist and ask for cleanup
-        if any(d.exists() for d in [self.vtk_dir, self.img_dir, self.params_dir]):
-            response = input("Output directories exist. Would you like to clear them? (y/n): ").lower()
-            if response == 'y':
-                print("Cleaning up previous simulation outputs...")
+        # Create fresh directories without asking
+        for directory in [self.output_dir, self.vtk_dir, self.img_dir, self.params_dir]:
+            if directory.exists():
+                print(f"Removing existing directory: {directory}")
                 import shutil
-                if self.output_dir.exists():
-                    shutil.rmtree(self.output_dir)
-                print("Cleanup complete.")
-        
-        # Create fresh directories
-        for directory in [self.vtk_dir, self.img_dir, self.params_dir]:
+                shutil.rmtree(directory)
+            
             directory.mkdir(parents=True, exist_ok=True)
+            print(f"Created directory: {directory}")
 
         # Create grid using factory
         self.grid = grid_factory(grid_shape, compute_backend=backend)
         self._setup()
+        
+        print(f"Simulation initialized with output to: {self.output_dir}")
 
     def _setup(self):
         self.setup_boundary_conditions()
