@@ -6,6 +6,7 @@
 **/*.tar.gz
 **/*.npy
 **/*.npz
+**/*.log
 
 # Python cache files
 **/__pycache__/

@@ -43,7 +43,7 @@ def aneurysm_simulation_setup(
     
     # Simulation parameters
     backend = ComputeBackend.WARP
-    # This isnt really a good move
+
     # Preload selected CSV data for flow profile if warp selected
     if backend == ComputeBackend.WARP and flow_profile is not None and flow_profile.get('data') is not None:
         # Extract the pre-converted y data (already in lattice units)
@@ -52,7 +52,6 @@ def aneurysm_simulation_setup(
         # Verify data is normalized and has 64 points
         if len(selected_profile_data_y) != 64:
             print(f"WARNING: Profile data has {len(selected_profile_data_y)} points, expected 64.")
-            # Could add resampling here if needed
         
         # Get min/max for debug info
         min_val = np.min(selected_profile_data_y)

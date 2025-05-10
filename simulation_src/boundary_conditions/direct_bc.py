@@ -49,6 +49,12 @@ class TimeDependentZouHeBC(BoundaryCondition):
         self.flow_profile = flow_profile
         if flow_profile is not None and isinstance(flow_profile, dict) and 'name' in flow_profile:
             self.profile_name = flow_profile['name']
+
+            # Check if we have a valid profile name
+            if self.profile_name is None or not isinstance(self.profile_name, str):
+                raise ValueError("Invalid flow profile name. Must be a non-empty string.")
+            
+            # Check if we have a valid profile data
             
             # Check if we have actual data or just using default sinusoidal
             if flow_profile.get('data') is not None and 'x' in flow_profile['data'] and 'y' in flow_profile['data']:

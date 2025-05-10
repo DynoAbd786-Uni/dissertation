@@ -24,14 +24,19 @@ from utils.wss_calculation import calculate_wss as wss_calculator
 
 MM_TO_M = 0.001
 
-class AneurysmSimulation2D:
-    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params):
+class PipeSimulation2D:
+    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params, 
+                 use_time_dependent_zou_he=False, use_non_newtonian_bgk=False, output_path=None):
         # initialize backend
         xlb.init(
             velocity_set=velocity_set,
             default_backend=backend,
             default_precision_policy=precision_policy,
         )
+
+        # Store BC and collision operator flags
+        self.use_time_dependent_zou_he = use_time_dependent_zou_he
+        self.use_non_newtonian_bgk = use_non_newtonian_bgk
 
         # Store input parameters
         self.input_params = input_params
@@ -50,26 +55,34 @@ class AneurysmSimulation2D:
         self.flow_profile = self.input_params.pop("flow_profile")
         self.flow_profile_name = self.flow_profile.get("name", "Sinusoidal (default)")
 
-        self.u_max = self.flow_profile.get("max_velocity", 0.4)   # Default max velocity is 0.4 m/s
+        self.u_max = self.input_params.get("max_velocity", 0.4)   
+
+        print(f"Max velocity (LU): {self.u_max:.3f}")
+
 
         # Calculate default post-processing interval based on fps
         self.post_process_interval = max(1, int(1 / (self.input_params.get("fps", 100) * self.dt)))
 
-        # Setup output directories
-        self.output_dir = Path("../aneurysm_simulation_results")
+        # Setup output directories with naming based on BC and collision operator flags
+        if output_path is not None:
+            # Use the provided output path
+            self.output_dir = Path(output_path)
+        else:
+            # Create default output path based on BC and collision operator types
+            bc_type = "tdzh" if use_time_dependent_zou_he else "zh"
+            col_type = "nnbgk" if use_non_newtonian_bgk else "bgk"
+            output_dirname = f"pipe_{bc_type}_{col_type}_results"
+            self.output_dir = Path(f"../{output_dirname}")
+        
         self.vtk_dir = self.output_dir / "vtk"
         self.img_dir = self.output_dir / "images"
         self.params_dir = self.output_dir / "parameters"
         
-       # Check if directories exist and ask for cleanup
+        # Check if directories exist and ask for cleanup only if no custom path is provided
         if any(d.exists() for d in [self.vtk_dir, self.img_dir, self.params_dir]):
-            response = input("Output directories exist. Would you like to clear them? (y/n): ").lower()
-            if response == 'y':
-                print("Cleaning up previous simulation outputs...")
-                import shutil
-                if self.output_dir.exists():
-                    shutil.rmtree(self.output_dir)
-                print("Cleanup complete.")
+            # Skip the interactive prompt by setting default to no (don't clear existing directories)
+            print(f"Output directories already exist at {self.output_dir}")
+            print("Will create new files in the existing directories.")
         
         # Create fresh directories
         for directory in [self.vtk_dir, self.img_dir, self.params_dir]:
@@ -78,6 +91,12 @@ class AneurysmSimulation2D:
         # Create grid using factory
         self.grid = grid_factory(grid_shape, compute_backend=backend)
         self._setup()
+
+        # Print configuration information
+        print(f"Pipe simulation initialized with grid shape: {grid_shape}")
+        print(f"Boundary condition: {'Time-dependent Zou-He' if self.use_time_dependent_zou_he else 'Standard Zou-He'}")
+        print(f"Collision operator: {'Non-Newtonian BGK' if self.use_non_newtonian_bgk else 'Standard BGK'}")
+        print(f"Output will be saved to: {self.output_dir}")
 
     def _setup(self):
         self.setup_boundary_conditions()
@@ -91,114 +110,27 @@ class AneurysmSimulation2D:
 
         # Retrieve vessel parameters
         vessel_length = self.input_params["vessel_length_lu"]  # Length of vessel in lattice units
-        vessel_diameter = self.input_params["vessel_diameter_lu"]    # Diameter of vessel in lattice units
-        bulge_horizontal_diameter = self.input_params["bulge_horizontal_lu"]  # Horizontal diameter of aneurysm bulge
-        bulge_vertical_diameter = self.input_params["bulge_vertical_lu"]      # Vertical diameter of aneurysm bulge
-        bulge_centre_x = self.input_params["bulge_centre_x_lu"]  # Horizontal centre of bulge
-        bulge_centre_y = self.input_params["bulge_centre_y_lu"]    # Vertical centre of bulge
-        vessel_centre = self.input_params["vessel_centre_lu"]  # Centre of vessel
-
-        # print("Vessel length:", vessel_length)
-        # print("Vessel diameter:", vessel_diameter)
-        # print("Bulge horizontal diameter:", bulge_horizontal_diameter)
-        # print("Bulge vertical diameter:", bulge_vertical_diameter)
-        # print("Bulge centre x:", bulge_centre_x)
-        # print("Bulge centre y:", bulge_centre_y)
-
-        # print(self.grid_shape)
-
-
-        # # Ovoid parameters
-        x0 = bulge_centre_x   # centre x position
-        y0 = bulge_centre_y  # centre y position
-        a = bulge_horizontal_diameter // 2                   # semi-major axis
-        b = bulge_vertical_diameter                 # semi-minor axis
+        vessel_diameter = self.input_params["vessel_diameter_lu"]  # Diameter of vessel in lattice units
+        vessel_centre = self.input_params.get("vessel_centre_lu", vessel_diameter)  # Centre of vessel
         
-        curve_x = []
-        curve_y = []
-        
-        # Generate only upper half with continuous pixels
-        last_y = None
-        for x_coord in range(x0 - a, x0 + a + 1):
-            if 0 <= x_coord < x:
-                # Calculate exact y coordinate for upper curve
-                y_coord = y0 + b * np.sqrt(1 - ((x_coord - x0)**2 / a**2))
-                y_base = int(y_coord)
-                
-                # Fill gaps between consecutive y coordinates
-                if last_y is not None:
-                    for y_fill in range(min(last_y, y_base), max(last_y, y_base) + 1):
-                        if 0 <= y_fill < y:
-                            curve_x.append(x_coord)
-                            curve_y.append(y_fill)
-                else:
-                    if 0 <= y_base < y:
-                        curve_x.append(x_coord)
-                        curve_y.append(y_base)
-                
-                last_y = y_base
-        
-        # Sort coordinates to maintain order
-        points = list(zip(curve_x, curve_y))
-        points = sorted(set(points))  # Remove duplicates while preserving order
-        curve_x, curve_y = zip(*points)
-        
-        # Debug prints
-        # print("Number of curve points:", len(curve_x))
-        # print("X range:", min(curve_x), "to", max(curve_x))
-        # print("Y range:", min(curve_y), "to", max(curve_y))
-
-        # Format for XLB
-        curve_wall = [list(curve_x), list(curve_y)]
-        # print("Curve wall:", curve_wall)
-
-        loc_upper = round(vessel_centre + vessel_diameter // 2) 
+        # Calculate pipe wall locations
+        loc_upper = round(vessel_centre + vessel_diameter // 2)
         loc_lower = round(vessel_centre - vessel_diameter // 2)
 
-        # print("loc_upper:", loc_upper)
-        # print("loc_lower:", loc_lower)
-
-        
-        # Create straight sections of upper wall
-        array_upper_left = [loc_upper for i in range(min(curve_x))]
-        array_upper_right = [loc_upper for i in range(max(curve_x) + 1, x)]
-        wall_width_upper_left = list(range(min(curve_x)))
-        wall_width_upper_right = list(range(max(curve_x) + 1, x))
-
-        # Create lower wall
+        # Create straight sections for upper and lower walls
+        wall_width_upper = list(range(x))
         wall_width_lower = list(range(x))
+        array_upper = [loc_upper for i in range(x)]
         array_lower = [loc_lower for i in range(x)]
 
         # Combine all wall sections
-        wall_width = (wall_width_upper_left + 
-                    list(curve_x) + 
-                    wall_width_upper_right + 
-                    wall_width_lower)
-        
-        wall_height = (array_upper_left + 
-                    list(curve_y) + 
-                    array_upper_right + 
-                    array_lower)
-
-
-
-        ####### OVERRIDE #######
-        # No buldge, just a pipe
-        # array_upper = [loc_upper for i in range(x)]
-
-        # wall_width = (wall_width_lower +
-        #             wall_width_lower)
-        
-        # wall_height = (array_upper + 
-        #             array_lower)
-
-
+        wall_width = wall_width_upper + wall_width_lower
+        wall_height = array_upper + array_lower
 
         # Format for XLB
         walls = [wall_width, wall_height]
-        
 
-        # Get inlet/outlet from box_no_edge (similar to how lid-driven cavity gets its lid)
+        # Get inlet/outlet
         x_array_left = [0 for i in range(loc_lower + 1, loc_upper)]
         x_array_right = [x - 1 for i in range(loc_lower + 1, loc_upper)]
         y_array = [i for i in range(loc_lower + 1, loc_upper)]
@@ -212,11 +144,6 @@ class AneurysmSimulation2D:
         inlet = np.array([x_array_left, y_array], dtype=np.int32).tolist()
         outlet = np.array([x_array_right, y_array], dtype=np.int32).tolist()
         
-        # Debug prints
-        # print("Inlet:", inlet)
-        # print("Outlet:", outlet)
-        # print("Walls:", walls)
-        
         return inlet, outlet, walls
 
     def setup_boundary_conditions(self):
@@ -227,18 +154,46 @@ class AneurysmSimulation2D:
         self.outlet_indices = outlet
         self.wall_indices = walls
         
-        # Inlet: use new direct BC
-        bc_inlet = TimeDependentZouHeBC(
-            bc_type="velocity",
-            indices=inlet,
-            dt=self.dt,
-            dx=self.dx,
-            u_max=self.u_max,
-            flow_profile=self.flow_profile,
-            frequency=1.0
-        )
+        # Get the velocity profile name
+        profile_name = self.input_params.get("flow_profile", {}).get("name", "sinusoidal")
+        
+        # Use TimeDependentZouHeBC for time-dependent boundary conditions
+        if self.use_time_dependent_zou_he:
+            from boundary_conditions.direct_bc import TimeDependentZouHeBC
 
-        # Walls: no-slip boundary condition
+            # Check if the profile is valid
+            if not self.flow_profile:
+                raise ValueError("Flow profile is not defined. Please provide a valid flow profile.")
+            if not isinstance(self.flow_profile, dict):
+                raise ValueError("Flow profile should be a dictionary with 'name' and 'data' keys.")
+            if "x" not in self.flow_profile["data"] or "y" not in self.flow_profile["data"]:
+                raise ValueError("Flow profile data must contain 'x' and 'y' keys.")
+            
+            print(f"Using time-dependent Zou-He BC with profile: {self.flow_profile_name}")
+
+            # Inlet: use new direct BC
+            bc_inlet = TimeDependentZouHeBC(
+                bc_type="velocity",
+                indices=inlet,
+                dt=self.dt,
+                dx=self.dx,
+                u_max=self.u_max,
+                flow_profile=self.flow_profile,
+                frequency=1.0
+            )
+        else:
+            print(f"USING STANDARD ZOU-HE BC")
+            print(f"Max velocity (LU): {self.u_max:.3f}")
+            print(self.input_params["max_velocity_lu"])
+
+            # Standard ZouHeBC for steady-state boundary conditions
+            bc_inlet = ZouHeBC(
+                bc_type="velocity",
+                indices=inlet,
+                prescribed_value=[self.input_params.get("max_velocity_lu", 0.04), 0.0] # Prescribed velocity at inlet
+            )
+
+        # Walls: bounce-back boundary condition
         bc_walls = FullwayBounceBackBC(indices=walls)
         
         # Outlet: zero-gradient outflow
@@ -247,13 +202,23 @@ class AneurysmSimulation2D:
         self.boundary_conditions = [bc_walls, bc_inlet, bc_outlet]
 
     def setup_stepper(self):
-        # New custom stepper with timestep support
-        self.stepper = CustomNSEStepper(
-            omega=self.omega,
-            grid=self.grid,
-            boundary_conditions=self.boundary_conditions,
-            collision_type="BGKNonNewtonian"
-        )
+        # Choose stepper based on flag
+        if self.use_non_newtonian_bgk:
+            # Use custom stepper with non-Newtonian BGK
+            self.stepper = CustomNSEStepper(
+                omega=self.omega,
+                grid=self.grid,
+                boundary_conditions=self.boundary_conditions,
+                collision_type="BGKNonNewtonian"
+            )
+        else:
+            # Use standard stepper with regular BGK
+            self.stepper = CustomNSEStepper(
+                omega=self.omega,
+                grid=self.grid,
+                boundary_conditions=self.boundary_conditions,
+                collision_type="BGK"
+            )
     
     def run(self, num_steps, post_process_interval=None):
         """Run simulation with detailed performance tracking"""
@@ -279,43 +244,48 @@ class AneurysmSimulation2D:
         step_times = []
         mlups_history = []
     
-    # PARTIALLY COMPLETED POUSIELLE FLOW PROFILE
-    # def bc_profile(self):
-    #     u_max = self.u_max  # u_max = 0.04
-    #     # Get the grid dimensions for the y and z directions
-    #     H_y = float(self.grid_shape[1] - 1)  # Height in y direction
-    #     # H_z = float(self.grid_shape[2] - 1)  # Height in z direction
+        for i in range(num_steps + 1):
+            # Measure pure simulation step time
+            step_start = time.time()
+            self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, i)
+            self.f_0, self.f_1 = self.f_1, self.f_0
+            step_end = time.time()
+            
+            # Track step performance
+            step_time = step_end - step_start
+            step_times.append(step_time)
+            total_sim_time += step_time
+            
+            # Calculate running MLUPS
+            current_mlups = (total_nodes / step_time) / 1e6
+            mlups_history.append(current_mlups)
 
-    #     @wp.func
-    #     def bc_profile_warp(index: wp.vec3i):
-    #         # Poiseuille flow profile: parabolic velocity distribution
-    #         y = self.precision_policy.store_precision.wp_dtype(index[1])
-    #         # z = self.precision_policy.store_precision.wp_dtype(index[2])
-
-    #         # Calculate normalized distance from center
-    #         y_center = y - (H_y / 2.0)
-    #         r_squared = (2.0 * y_center / H_y) ** 2.0
-
-    #         # Parabolic profile: u = u_max * (1 - r²)
-    #         return wp.vec(u_max * wp.max(0.0, 1.0 - r_squared), length=1)
-
-    #     def bc_profile_jax():
-    #         y = jnp.arange(self.grid_shape[1])
-
-    #         # Calculate normalized distance from center
-    #         y_center = y - (H_y / 2.0)
-    #         r_squared = (2.0 * y_center / H_y) ** 2.0
-
-    #         # Parabolic profile for x velocity, zero for y and z
-    #         u_x = u_max * jnp.maximum(0.0, 1.0 - r_squared)
-    #         u_y = jnp.zeros_like(u_x)
-
-    #         return jnp.stack([u_x, u_y])
-
-    #     if self.backend == ComputeBackend.JAX:
-    #         return bc_profile_jax
-    #     elif self.backend == ComputeBackend.WARP:
-    #         return bc_profile_warp
+            if i % post_process_interval == 0:
+                # Calculate statistics
+                progress = i / num_steps * 100
+                
+                # Use recent steps for performance estimate
+                recent_steps = min(post_process_interval, len(step_times))
+                avg_step_time = sum(step_times[-recent_steps:]) / recent_steps
+                avg_mlups = (total_nodes / avg_step_time) / 1e6
+                remaining_steps = num_steps - i
+                estimated_seconds = remaining_steps * avg_step_time
+                
+                # Status update
+                print(f"\nStep {i}/{num_steps} ({progress:.1f}%)")
+                print(f"Simulation Statistics:")
+                print(f"├── Current MLUPS: {current_mlups:.2f}")
+                print(f"├── Average MLUPS: {avg_mlups:.2f}")
+                print(f"├── Step time: {step_time*1000:.2f}ms")
+                print(f"└── ETA: {str(timedelta(seconds=int(estimated_seconds)))}")
+                
+                # Post-processing
+                post_start = time.time()
+                self.post_process(i)
+                post_time = time.time() - post_start
+                total_post_process_time += post_time
+                post_process_calls += 1
+                print(f"\nPost-processing time: {post_time:.3f}s")
 
     def run_for_duration(self, duration_seconds, warmup_seconds=0.0, post_process_interval=None):
         """Run simulation for a specific duration in seconds with an optional additional warmup period.
@@ -477,7 +447,9 @@ class AneurysmSimulation2D:
                 "post_process_calls": post_process_calls,
                 "total_simulation_time": simulated_total_time,
                 "warmup_time": warmup_seconds,
-                "analysis_time": duration_seconds
+                "analysis_time": duration_seconds,
+                "boundary_condition": "time_dependent_zou_he" if self.use_time_dependent_zou_he else "standard_zou_he",
+                "collision_operator": "non_newtonian_bgk" if self.use_non_newtonian_bgk else "standard_bgk"
             }
         )
         
@@ -577,12 +549,16 @@ class AneurysmSimulation2D:
 
         # Save VTK file in vtk subdirectory
         vtk_path = self.vtk_dir
-        save_fields_vtk(fields, output_dir=vtk_path, timestep=i, prefix="aneurysm")
+        bc_type = "tdzh" if self.use_time_dependent_zou_he else "zh"
+        col_type = "nnbgk" if self.use_non_newtonian_bgk else "bgk"
+        prefix = f"pipe_{bc_type}_{col_type}"
+        save_fields_vtk(fields, output_dir=vtk_path, timestep=i, prefix=prefix)
         
         # Save image with fixed colorbar range in images subdirectory
         # Use theoretical maximum velocity as upper bound
         vmin = 0.0
-        vmax = self.u_max * 1.5     # 50% margin max velocity
+        # Convert to physical units for the comment (LU * dx/dt = m/s)
+        vmax = self.u_max * 1.5     # 50% margin over max velocity (physical: ~{self.u_max * self.dx/self.dt * 1.5:.2f} m/s)
         print(f"Saving image with vmin={vmin}, vmax={vmax}")
         print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
         print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))
@@ -592,7 +568,7 @@ class AneurysmSimulation2D:
         # Generate velocity field image
         save_image(
             fields["u_magnitude"],
-            prefix=str(self.img_dir / f"aneurysm_"),
+            prefix=str(self.img_dir / f"{prefix}_"),
             timestep=i,
             vmin=vmin,
             vmax=vmax
@@ -604,7 +580,7 @@ class AneurysmSimulation2D:
         #     wss_vmax = np.max(wss_magnitude) * 1.1  # 10% margin
         #     save_image(
         #         fields["wss_magnitude"],
-        #         prefix=str(self.img_dir / f"aneurysm_wss_"),
+        #         prefix=str(self.img_dir / f"{prefix}_wss_"),
         #         timestep=i,
         #         vmin=0.0,
         #         vmax=wss_vmax,
@@ -614,7 +590,7 @@ class AneurysmSimulation2D:
         #     # Generate wall mask image
         #     save_image(
         #         fields["wall_mask"],
-        #         prefix=str(self.img_dir / f"aneurysm_wall_"),
+        #         prefix=str(self.img_dir / f"{prefix}_wall_"),
         #         timestep=i,
         #         vmin=0.0,
         #         vmax=1.0,
@@ -624,7 +600,7 @@ class AneurysmSimulation2D:
         post_process_time = time.time() - post_process_start
         return post_process_time
     
-    def save_simulation_parameters(self, filename_prefix="aneurysm_params", final_metrics=None):
+    def save_simulation_parameters(self, filename_prefix=None, final_metrics=None):
         """Save simulation parameters and final metrics to JSON file
         
         Args:
@@ -632,7 +608,7 @@ class AneurysmSimulation2D:
             final_metrics (dict): Dictionary containing final simulation metrics
         """
         # Get collision operator details
-        collision_type = "BGKNonNewtonian"
+        collision_type = "BGK" if not self.use_non_newtonian_bgk else "BGKNonNewtonian"
         collision_details = {}
         
         if hasattr(self.stepper, 'collision'):
@@ -650,6 +626,12 @@ class AneurysmSimulation2D:
                         "dx_physical": self.stepper.collision.dx_physical,
                         "dt_physical": self.stepper.collision.dt_physical
                     }
+        
+        # Create custom filename prefix if not provided
+        if filename_prefix is None:
+            bc_type = "tdzh" if self.use_time_dependent_zou_he else "zh"
+            col_type = "nnbgk" if self.use_non_newtonian_bgk else "bgk"
+            filename_prefix = f"pipe_{bc_type}_{col_type}_params"
         
         parameters = {
             "input_parameters": self.input_params,
@@ -680,7 +662,7 @@ class AneurysmSimulation2D:
                     {
                         "type": bc.__class__.__name__,
                         "position": idx,
-                        "location": "inlet" if isinstance(bc, TimeDependentZouHeBC) else 
+                        "location": "inlet" if isinstance(bc, (TimeDependentZouHeBC, ZouHeBC)) and idx == 1 else 
                                    "outlet" if isinstance(bc, ExtrapolationOutflowBC) else 
                                    "walls" if isinstance(bc, FullwayBounceBackBC) else "other"
                     } for idx, bc in enumerate(self.boundary_conditions)
@@ -688,8 +670,11 @@ class AneurysmSimulation2D:
                 "flow_profile": {
                     "name": self.flow_profile_name,
                     "max_velocity": float(self.u_max),
-                    "is_time_dependent": isinstance(next((bc for bc in self.boundary_conditions 
-                                                       if isinstance(bc, TimeDependentZouHeBC)), None), TimeDependentZouHeBC)
+                    "is_time_dependent": self.use_time_dependent_zou_he
+                },
+                "model_configuration": {
+                    "time_dependent_zou_he": self.use_time_dependent_zou_he,
+                    "non_newtonian_bgk": self.use_non_newtonian_bgk
                 }
             },
             "metadata": {
@@ -721,7 +706,7 @@ class AneurysmSimulation2D:
                 "execution_stats": {
                     "total_steps": final_metrics["total_steps"],
                     "post_process_calls": final_metrics["post_process_calls"],
-                    "steps_per_post_process": final_metrics["total_steps"] // final_metrics["post_process_calls"]
+                    "steps_per_post_process": final_metrics["total_steps"] // final_metrics["post_process_calls"] if final_metrics["post_process_calls"] > 0 else 0
                 }
             }
         
@@ -732,7 +717,5 @@ class AneurysmSimulation2D:
             json.dump(parameters, f, indent=4)
         
         print(f"Parameters and performance metrics saved to {filename}")
-        print(f"Collision operator details saved: {collision_type}")
-
-
-
+        print(f"Boundary condition: {'Time-dependent Zou-He' if self.use_time_dependent_zou_he else 'Standard Zou-He'}")
+        print(f"Collision operator: {'Non-Newtonian BGK' if self.use_non_newtonian_bgk else 'Standard BGK'}")
