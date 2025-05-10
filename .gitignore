@@ -21,3 +21,5 @@
 
 # Simulation output directories
 aneurysm_simulation_results/
+results/pipe_flow
+results/aneurysm_flow
