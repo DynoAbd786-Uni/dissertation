@@ -19,7 +19,9 @@ def aneurysm_simulation_setup(
     dt=5e-7,
     fps=100,
     flow_profile=None,
-    output_path=None
+    output_path=None,
+    save_wss_png=True,  # Flag to control WSS and wall mask PNG generation
+    zero_velocity_in_walls=True  # New flag to zero out velocity in wall cells
 ) -> AneurysmSimulation2D:
     """Setup aneurysm simulation with configurable parameters"""
     
@@ -102,7 +104,9 @@ def aneurysm_simulation_setup(
         "vessel_centre_lu": vessel_centre_lu,
         "bulge_centre_x_lu": grid_x // 2,
         "bulge_centre_y_lu": vessel_centre_lu + (grid_y // 2),
-        "flow_profile": flow_profile
+        "flow_profile": flow_profile,
+        "save_wss_png": save_wss_png,  # Add the flag to input parameters
+        "zero_velocity_in_walls": zero_velocity_in_walls  # Add the flag to input parameters
     }
     
     # Create simulation
@@ -235,7 +239,8 @@ if __name__ == "__main__":
         dt=dt,                       # Time step
         fps=100,                     # Output frames per second
         flow_profile=flow_profile,   # Pass selected flow profile with name
-        output_path=output_path      # Pass the output path
+        output_path=output_path,     # Pass the output path
+        save_wss_png=True            # Enable WSS and wall mask PNG generation
     )
 
     # Run simulation for 1 second with warmup
