@@ -61,7 +61,7 @@ python build_and_run_docker.py --run --mode interactive
 python build_and_run_docker.py --run --mode jupyter
 
 # Run a specific simulation script
-python build_and_run_docker.py --run --script simulation_src/standard_run.py
+python build_and_run_docker.py --run --script simulation_src/aneurysm_run.py
 
 # Run without GPU support
 python build_and_run_docker.py --run --no-gpu
@@ -96,7 +96,7 @@ docker run -it --gpus all -v ${PWD}:/app -v ${PWD}/results:/app/results disserta
 docker run -p 8888:8888 --gpus all -v ${PWD}:/app -v ${PWD}/results:/app/results dissertation jupyter notebook --ip=0.0.0.0 --allow-root --no-browser
 
 # Execute a command in a running container
-docker exec dissertation python simulation_src/standard_run.py
+docker exec dissertation python simulation_src/aneurysm_run.py
 ```
 
 ## Simulation Source Code
@@ -124,11 +124,19 @@ The simulation source code is located in the `simulation_src/` directory and pro
 
 ### Running Simulations
 
-The primary entry point is `standard_run.py`:
+The primary entry point is `aneurysm_run.py`:
 
 ```bash
-python simulation_src/standard_run.py [options]
+python simulation_src/aneurysm_run.py [options]
 ```
+
+For batch simulations with multiple configurations, use `run_all_sim_configs.py`:
+
+```bash
+python simulation_src/run_all_sim_configs.py
+```
+
+This script will execute all configured simulations sequentially. **Note that simulations can take up to 10 minutes each** depending on the configuration and available hardware.
 
 #### Command Line Options
 
@@ -163,6 +171,17 @@ The main visualization notebook is `vtk_visualization.ipynb`, which provides:
 4. Streamline generation
 5. Curl (vorticity) and divergence analysis
 
+### Verification and Analysis
+
+The project includes several objective-focused notebooks for verification and analysis of simulation results:
+
+- `visualisation_src/objective_1_visualiser.ipynb`: Verification of basic simulation properties and boundary conditions
+- `visualisation_src/objective_2_visualiser.ipynb`: Analysis of non-Newtonian blood flow models
+- `visualisation_src/objective_3_visualiser.ipynb`: Evaluation of pulsatile flow implementation
+- `visualisation_src/objective_4_visualiser.ipynb`: Comprehensive aneurysm flow analysis
+
+These notebooks contain code to validate simulation results against theoretical expectations and visualize key metrics for each research objective.
+
 ### Interactive Analysis
 
 To use the visualization notebook:
@@ -187,9 +206,9 @@ Simulation results are stored in multiple formats:
 
 - **VTK Files**: Contains full 3D data fields for velocity, pressure, and other variables
 - **Images**: Rendered snapshots of the simulation state
-- **Parameter Files**: Records of simulation parameters
+- **Parameter Files**: Records of simulation parameters and metadata including performance metrics
 
-The default output location is the `results/` directory, with subdirectories for each simulation run.
+The default output location is the `results/` directory, with subdirectories for each simulation run. Logs are stored in `results/logs/` and include detailed performance information.
 
 ## Examples
 
