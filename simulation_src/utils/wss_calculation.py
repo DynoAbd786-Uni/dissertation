@@ -25,8 +25,10 @@ def calculate_wss(velocity_field, wall_indices, dx_physical, dt_physical,
         a: Transition parameter, default 2.0
             
     Returns:
-        tuple: (wss_field, wall_mask) where:
-            - wss_field is a 2D array of WSS values (zeros for non-wall locations)
+        tuple: (wss_magnitude, wss_x, wss_y, wall_mask) where:
+            - wss_magnitude is a 2D array of WSS magnitude values
+            - wss_x is a 2D array of x-component of WSS vector
+            - wss_y is a 2D array of y-component of WSS vector
             - wall_mask is a boolean array indicating wall locations
     """
     # Extract velocity components and convert to numpy if needed
@@ -42,7 +44,9 @@ def calculate_wss(velocity_field, wall_indices, dx_physical, dt_physical,
     width, height = shape
     
     # Create arrays for results
-    wss_field = np.zeros(shape)
+    wss_magnitude = np.zeros(shape)
+    wss_x = np.zeros(shape)
+    wss_y = np.zeros(shape)
     wall_mask = np.zeros(shape, dtype=bool)
     
     # Mark wall locations in the wall mask using wall indices
@@ -127,6 +131,27 @@ def calculate_wss(velocity_field, wall_indices, dx_physical, dt_physical,
                     viscosity = mu_inf + (mu_0 - mu_inf) * factor
                     
                     # Calculate WSS magnitude (τ = μ * γ̇)
-                    wss_field[x, y] = viscosity * shear_rate
+                    wss_magnitude[x, y] = viscosity * shear_rate
+                    
+                    # Calculate WSS vector components
+                    # Wall shear stress acts in the direction tangential to the wall
+                    # So we need to calculate tangential components
+                    tangential_x = -wall_normal_y  # perpendicular to normal
+                    tangential_y = wall_normal_x   # perpendicular to normal
+                    
+                    # Compute strain rate in tangential direction
+                    strain_tangential = (
+                        e_xx * tangential_x * tangential_x +
+                        e_yy * tangential_y * tangential_y +
+                        2 * e_xy * tangential_x * tangential_y
+                    )
+                    
+                    # Calculate directional WSS (sign indicates direction along tangent)
+                    # This ensures the WSS vector points in the correct direction along the wall
+                    wss_dir = np.sign(strain_tangential)
+                    
+                    # Assign WSS vector components (magnitude * direction)
+                    wss_x[x, y] = wss_magnitude[x, y] * wss_dir * tangential_x
+                    wss_y[x, y] = wss_magnitude[x, y] * wss_dir * tangential_y
     
-    return wss_field, wall_mask
+    return wss_magnitude, wss_x, wss_y, wall_mask

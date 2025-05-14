@@ -4,11 +4,22 @@
 **/*.json
 **/*.zip
 **/*.tar.gz
+**/*.npy
+**/*.npz
+**/*.log
 
 # Python cache files
 **/__pycache__/
 **/*.py[cod]
 **/*$py.class
 
+# Jupyter Notebook checkpoints
+**/.ipynb_checkpoints
+# Jupyter Notebook outputs
+**/*.ipynb_checkpoints
+
+
 # Simulation output directories
 aneurysm_simulation_results/
+results/pipe_flow
+results/aneurysm_flow
