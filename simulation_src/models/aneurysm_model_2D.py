@@ -497,6 +497,27 @@ class AneurysmSimulation2D:
         )
 
         rho, u = macro(f_0)
+        
+        # Check for NaN or infinity values in macroscopic quantities
+        if np.any(np.isnan(rho)) or np.any(np.isinf(rho)):
+            raise ValueError(
+                "ERROR: NaN or infinity detected in density (rho) field in aneurysm simulation. This indicates numerical instability.\n"
+                "Possible causes:\n"
+                "1. Relaxation parameter (tau or omega) is too small or too close to 0.5\n"
+                "2. Inlet velocity is too high, causing Mach number > 0.1\n"
+                "3. Complex geometry with sharp corners in the aneurysm bulge\n"
+                f"Current parameters: tau={1.0/self.omega:.3f}, omega={self.omega:.3f}, max_velocity={self.u_max:.3f}"
+            )
+            
+        if np.any(np.isnan(u)) or np.any(np.isinf(u)):
+            raise ValueError(
+                "ERROR: NaN or infinity detected in velocity field in aneurysm simulation. This indicates numerical instability.\n"
+                "Possible causes:\n"
+                "1. Relaxation parameter (tau or omega) is too small or too close to 0.5\n"
+                "2. Inlet velocity is too high, causing Mach number > 0.1\n"
+                "3. Complex geometry with sharp corners in the aneurysm bulge\n"
+                f"Current parameters: tau={1.0/self.omega:.3f}, omega={self.omega:.3f}, max_velocity={self.u_max:.3f}"
+            )
 
         # Calculate Wall Shear Stress (WSS) using the external function
         carreau_yasuda_params = {}
@@ -635,17 +656,17 @@ class AneurysmSimulation2D:
         print("u_y values:", np.min(fields["u_y"]), np.max(fields["u_y"]))
         print("u_magnitude values:", np.min(fields["u_magnitude"]), np.max(fields["u_magnitude"]))
 
-        # Generate velocity field image
-        save_image(
-            fields["u_magnitude"],
-            prefix=str(self.img_dir / f"aneurysm_"),
-            timestep=i,
-            vmin=vmin,
-            vmax=vmax
-        )
-        
-        # Check if WSS and wall mask PNG generation is enabled
+        # Only generate PNG images if save_wss_png flag is True
         if self.save_wss_png:
+            # Generate velocity field image
+            save_image(
+                fields["u_magnitude"],
+                prefix=str(self.img_dir / f"aneurysm_"),
+                timestep=i,
+                vmin=vmin,
+                vmax=vmax
+            )
+            
             # Generate WSS magnitude image if available 
             if wss_magnitude is not None:
                 # Use a reasonable scale for WSS
@@ -672,7 +693,9 @@ class AneurysmSimulation2D:
                 print(f"WSS and wall mask PNG files saved for timestep {i}")
             else:
                 print(f"WARNING: Cannot generate WSS and wall mask PNGs - WSS calculation failed")
-                
+        else:
+            print("PNG generation skipped (--generate-pngs flag not set)")
+        
         post_process_time = time.time() - post_process_start
         return post_process_time
     
@@ -683,6 +706,19 @@ class AneurysmSimulation2D:
             filename_prefix (str): Prefix for the output JSON file
             final_metrics (dict): Dictionary containing final simulation metrics
         """
+        # Helper function to convert NumPy arrays to lists for JSON serialization
+        def numpy_to_json_serializable(obj):
+            if isinstance(obj, (np.ndarray, np.number)):
+                return obj.tolist()
+            elif isinstance(obj, (list, tuple)):
+                return [numpy_to_json_serializable(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {key: numpy_to_json_serializable(val) for key, val in obj.items()}
+            elif isinstance(obj, (int, float, str, bool, type(None))):
+                return obj
+            else:
+                return str(obj)  # Convert other types to strings
+                
         # Get collision operator details
         collision_type = "BGKNonNewtonian"
         collision_details = {}
@@ -702,7 +738,7 @@ class AneurysmSimulation2D:
                         "dx_physical": self.stepper.collision.dx_physical,
                         "dt_physical": self.stepper.collision.dt_physical
                     }
-        
+    
         parameters = {
             "input_parameters": self.input_params,
             "physical": {
@@ -776,15 +812,18 @@ class AneurysmSimulation2D:
                 "execution_stats": {
                     "total_steps": final_metrics["total_steps"],
                     "post_process_calls": final_metrics["post_process_calls"],
-                    "steps_per_post_process": final_metrics["total_steps"] // final_metrics["post_process_calls"]
+                    "steps_per_post_process": final_metrics["total_steps"] // final_metrics["post_process_calls"] if final_metrics["post_process_calls"] > 0 else 0
                 }
             }
         
         # Generate filename with timestamp
         filename = self.params_dir / f"{filename_prefix}.json"
         
+        # Convert all NumPy arrays and other non-serializable objects to JSON serializable types
+        serializable_parameters = numpy_to_json_serializable(parameters)
+        
         with open(filename, 'w') as f:
-            json.dump(parameters, f, indent=4)
+            json.dump(serializable_parameters, f, indent=4)
         
         print(f"Parameters and performance metrics saved to {filename}")
         print(f"Collision operator details saved: {collision_type}")

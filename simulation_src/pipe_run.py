@@ -1,6 +1,7 @@
 from models.pipe_model_2D import PipeSimulation2D
 from xlb import ComputeBackend, PrecisionPolicy
 from utils.load_csv import load_csv_data
+from utils.directory_utils import delete_directory_if_exists
 import xlb
 import warp as wp
 from utils.constants import load_profile_values
@@ -56,7 +57,7 @@ def pipe_simulation_setup(
     grid_shape=(1000, 200),
     resolution=0.02,  # mm per lattice unit
     vessel_diameter_mm=4.0,  # mm
-    vessel_length_mm=20.0,  # mm
+    vessel_length_mm=200.0,  # mm
     kinematic_viscosity=3.3e-6,  # m^2/s, blood kinematic viscosity
     max_velocity=0.2,  # m/s
     flow_profile_type="sinusoidal",
@@ -68,7 +69,8 @@ def pipe_simulation_setup(
     fps=100,
     flow_profile=None,  # Add flow_profile parameter with default None
     check_stability=True,  # Add stability check parameter
-    output_path=None  # Add parameter for output path
+    output_path=None,  # Add parameter for output path
+    save_png=False  # Add parameter for PNG generation flag
 ) -> PipeSimulation2D:
     """Setup pipe simulation with configurable parameters"""
 
@@ -164,7 +166,8 @@ def pipe_simulation_setup(
         input_params=input_params,
         use_time_dependent_zou_he=use_time_dependent_zou_he,
         use_non_newtonian_bgk=use_non_newtonian_bgk,
-        output_path=output_path  # Pass the output path
+        output_path=output_path,  # Pass the output path
+        save_png=save_png  # Pass the PNG generation flag
     )
     
     return simulation
@@ -177,14 +180,26 @@ if __name__ == "__main__":
                         help='Boundary condition type: standard (Standard Zou-He) or time-dependent (Time-dependent Zou-He)')
     parser.add_argument('--collision-operator', choices=['standard', 'non-newtonian'], required=True,
                         help='Collision operator type: standard (Standard BGK) or non-newtonian (Non-Newtonian BGK)')
+    parser.add_argument('--long-pipe', action='store_true',
+                        help='Use longer pipe simulation settings with dt=5e-5, resolution=0.08, vessel_length=800mm')
+    parser.add_argument('--generate-pngs', action='store_true',
+                        help='Generate PNG images during simulation (if not specified, only VTK files will be saved)')
     args = parser.parse_args()
     
-    dt = 1e-5  # Time step size (seconds)
-    resolution_mm = 0.02  # 0.02mm resolution
+    # Set simulation parameters
+    dt = 4e-5 if args.long_pipe else 1e-5  # Time step size (seconds)
+    resolution_mm = 0.08 if args.long_pipe else 0.02  # Resolution in mm
     resolution_m = resolution_mm * 0.001  # Convert to meters
     vessel_diameter_mm = 6.5  # Male Common Carotid Artery size.
-    vessel_length_mm = 15  # 15mm vessel length
-
+    vessel_length_mm = 800 if args.long_pipe else 15  # Vessel length in mm
+    
+    if args.long_pipe:
+        print("\n=== LONG PIPE MODE ENABLED ===")
+        print(f"Using longer pipe simulation settings:")
+        print(f"  - dt: {dt} seconds")
+        print(f"  - resolution: {resolution_mm} mm")
+        print(f"  - vessel length: {vessel_length_mm} mm")
+        print("==========================")
     # Load CSV files - now with dx and dt parameters for lattice unit conversion
     flow_profile_data = load_csv_data(
         vessel_radius_mm=vessel_diameter_mm/2,  # Convert diameter to radius
@@ -268,6 +283,9 @@ if __name__ == "__main__":
     
     print(f"Output will be saved to: {output_path}")
     
+    # Delete the output directory if it exists
+    delete_directory_if_exists(output_path)
+    
     # Create simulation with realistic vessel parameters
     simulation = pipe_simulation_setup(
         vessel_length_mm=vessel_length_mm,        
@@ -280,7 +298,8 @@ if __name__ == "__main__":
         max_velocity=0.4,           # Maximum physical velocity in m/s
         use_time_dependent_zou_he=use_time_dependent_zou_he,  # Boundary condition type
         use_non_newtonian_bgk=use_non_newtonian_bgk,  # Collision operator type
-        output_path=output_path  # Pass the output path
+        output_path=output_path,  # Pass the output path
+        save_png=args.generate_pngs  # Pass the PNG generation flag
     )
     
 

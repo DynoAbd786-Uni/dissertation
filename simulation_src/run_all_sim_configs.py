@@ -20,7 +20,7 @@ BASE_DIR = SCRIPT_DIR.parent  # Dissertation directory
 BOUNDARY_CONDITIONS = ["standard", "time-dependent"]
 COLLISION_OPERATORS = ["standard", "non-newtonian"]
 
-def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False):
+def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False, long_pipe=False):
     """
     Run a pipe simulation with the specified boundary condition and collision operator.
     
@@ -28,6 +28,7 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False):
         boundary_condition (str): Boundary condition type, either "standard" or "time-dependent"
         collision_operator (str): Collision operator type, either "standard" or "non-newtonian"
         dry_run (bool): If True, print command but don't execute
+        long_pipe (bool): If True, use longer pipe simulation settings
     
     Returns:
         tuple: (return_code, output, error) from the process
@@ -51,10 +52,19 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False):
         f"--collision-operator={collision_operator}"
     ]
     
+    # Add long pipe flag if requested
+    if long_pipe:
+        cmd.append("--long-pipe")
+    
+    # Add generate-pngs flag for production runs (not dry runs)
+    if not dry_run:
+        cmd.append("--generate-pngs")
+    
     print(f"\n{'='*80}")
     print(f"Running pipe simulation with:")
     print(f"  Boundary Condition: {boundary_condition}")
     print(f"  Collision Operator: {collision_operator}")
+    print(f"  Long Pipe: {'Enabled' if long_pipe else 'Disabled'}")
     print(f"  Log File: {log_file}")
     print(f"  Command: {' '.join(cmd)}")
     
@@ -113,13 +123,12 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False):
         print(f"Error running pipe simulation: {e}")
         return 1, "", str(e)
 
-def run_aneurysm_simulation(collision_operator, dry_run=False):
+def run_aneurysm_simulation(dry_run=False):
     """
-    Run an aneurysm simulation with the specified collision operator.
-    Aneurysm simulations always use time-dependent boundary conditions.
+    Run an aneurysm simulation.
+    Aneurysm simulations always use time-dependent boundary conditions and non-newtonian BGK.
     
     Args:
-        collision_operator (str): Collision operator type, either "standard" or "non-newtonian"
         dry_run (bool): If True, print command but don't execute
     
     Returns:
@@ -129,7 +138,7 @@ def run_aneurysm_simulation(collision_operator, dry_run=False):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
     # Create a descriptive name for this run
-    run_name = f"aneurysm_{collision_operator}_{timestamp}"
+    run_name = f"aneurysm_{timestamp}"
     
     # Prepare log directory
     log_dir = BASE_DIR / "results" / "logs"
@@ -142,13 +151,12 @@ def run_aneurysm_simulation(collision_operator, dry_run=False):
         str(SCRIPT_DIR / "aneurysm_run.py")
     ]
     
-    # Add collision operator parameter if supported by aneurysm_run.py
-    if collision_operator == "non-newtonian":
-        cmd.append("--non-newtonian")
+    # Add the generate-pngs flag only in production runs (not dry runs)
+    if not dry_run:
+        cmd.append("--generate-pngs")
     
     print(f"\n{'='*80}")
     print(f"Running aneurysm simulation with:")
-    print(f"  Collision Operator: {collision_operator}")
     print(f"  Log File: {log_file}")
     print(f"  Command: {' '.join(cmd)}")
     
@@ -211,11 +219,12 @@ def main():
     """
     Main function to parse arguments and run all simulation combinations.
     """
-    parser = argparse.ArgumentParser(description="Run pipe and aneurysm simulation configurations.")
-    parser.add_argument("--dry-run", action="store_true", help="Print commands but don't execute them")
-    parser.add_argument("--single", action="store_true", help="Run only the standard-standard pipe configuration")
-    parser.add_argument("--pipe-only", action="store_true", help="Run only pipe simulations, not aneurysm")
-    parser.add_argument("--aneurysm-only", action="store_true", help="Run only aneurysm simulations, not pipe")
+    parser = argparse.ArgumentParser(description="Run all possible simulation configurations")
+    parser.add_argument("--dry-run", action="store_true", help="Print commands without executing")
+    parser.add_argument("--aneurysm-only", action="store_true", help="Run only the aneurysm simulations")
+    parser.add_argument("--pipe-only", action="store_true", help="Run only the pipe simulations")
+    parser.add_argument("--long-pipe", action="store_true", 
+                        help="Use long pipe simulation settings (dt=5e-5, resolution=0.08, vessel_length=800mm)")
     args = parser.parse_args()
     
     # Track successes and failures
@@ -226,30 +235,20 @@ def main():
     
     # Run pipe simulations if requested
     if not args.aneurysm_only:
-        if args.single:
-            # Run only standard-standard combination
-            print("Running only standard boundary condition with standard collision operator")
-            return_code, _, _ = run_pipe_simulation("standard", "standard", args.dry_run)
-            pipe_results.append(("standard", "standard", return_code == 0))
-        else:
-            # Run all pipe combinations
-            print(f"Running all {len(BOUNDARY_CONDITIONS) * len(COLLISION_OPERATORS)} pipe combinations")
-            
-            for bc in BOUNDARY_CONDITIONS:
-                for co in COLLISION_OPERATORS:
-                    return_code, _, _ = run_pipe_simulation(bc, co, args.dry_run)
-                    pipe_results.append((bc, co, return_code == 0))
+        # Run all pipe combinations
+        print(f"Running all {len(BOUNDARY_CONDITIONS) * len(COLLISION_OPERATORS)} pipe combinations")
+        
+        for bc in BOUNDARY_CONDITIONS:
+            for co in COLLISION_OPERATORS:
+                return_code, _, _ = run_pipe_simulation(bc, co, args.dry_run, args.long_pipe)
+                pipe_results.append((bc, co, return_code == 0))
     
     # Run aneurysm simulations if requested
     if not args.pipe_only:
-        print("Running aneurysm simulations")
-        # Aneurysm with standard collision operator
-        return_code, _, _ = run_aneurysm_simulation("standard", args.dry_run)
-        aneurysm_results.append(("standard", return_code == 0))
-        
-        # Aneurysm with non-Newtonian collision operator
-        return_code, _, _ = run_aneurysm_simulation("non-newtonian", args.dry_run)
-        aneurysm_results.append(("non-newtonian", return_code == 0))
+        print("Running aneurysm simulation")
+        # Aneurysm with NNBGK and TDZH (defaults)
+        return_code, _, _ = run_aneurysm_simulation(args.dry_run)
+        aneurysm_results.append(("nnbgk_tdzh", return_code == 0))
     
     end_time_all = time.time()
     total_time = end_time_all - start_time_all

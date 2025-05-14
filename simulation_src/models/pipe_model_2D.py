@@ -25,18 +25,15 @@ from utils.wss_calculation import calculate_wss as wss_calculator
 MM_TO_M = 0.001
 
 class PipeSimulation2D:
-    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params, 
-                 use_time_dependent_zou_he=False, use_non_newtonian_bgk=False, output_path=None):
+    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, 
+                 input_params, use_time_dependent_zou_he=False, use_non_newtonian_bgk=False, 
+                 output_path=None, save_png=False):
         # initialize backend
         xlb.init(
             velocity_set=velocity_set,
             default_backend=backend,
             default_precision_policy=precision_policy,
         )
-
-        # Store BC and collision operator flags
-        self.use_time_dependent_zou_he = use_time_dependent_zou_he
-        self.use_non_newtonian_bgk = use_non_newtonian_bgk
 
         # Store input parameters
         self.input_params = input_params
@@ -46,19 +43,18 @@ class PipeSimulation2D:
         self.precision_policy = precision_policy
         self.omega = omega
         self.resolution = resolution
-        
         self.dt = input_params["dt"]
         self.dx = input_params["dx"]
-        self.boundary_conditions = []
-
-        # Pop flow profile from the dict after saving to class
-        self.flow_profile = self.input_params.pop("flow_profile")
-        self.flow_profile_name = self.flow_profile.get("name", "Sinusoidal (default)")
-
-        self.u_max = self.input_params.get("max_velocity", 0.4)   
-
-        print(f"Max velocity (LU): {self.u_max:.3f}")
-
+        self.u_max = input_params["max_velocity_lu"]
+        self.use_time_dependent_zou_he = use_time_dependent_zou_he
+        self.use_non_newtonian_bgk = use_non_newtonian_bgk
+        
+        # Get the flow profile from input parameters
+        self.flow_profile = input_params.get("flow_profile", {"name": "sinusoidal"})
+        self.flow_profile_name = self.flow_profile.get("name", "sinusoidal")
+        
+        # Flag to control PNG generation
+        self.save_png = save_png
 
         # Calculate default post-processing interval based on fps
         self.post_process_interval = max(1, int(1 / (self.input_params.get("fps", 100) * self.dt)))
@@ -78,11 +74,19 @@ class PipeSimulation2D:
         self.img_dir = self.output_dir / "images"
         self.params_dir = self.output_dir / "parameters"
         
-        # Check if directories exist and ask for cleanup only if no custom path is provided
+        # Check if directories exist and delete them if needed
         if any(d.exists() for d in [self.vtk_dir, self.img_dir, self.params_dir]):
-            # Skip the interactive prompt by setting default to no (don't clear existing directories)
             print(f"Output directories already exist at {self.output_dir}")
-            print("Will create new files in the existing directories.")
+            print(f"Automatically deleting old files in {self.output_dir}")
+            # Delete existing directory contents but keep the directory structure
+            for directory in [self.vtk_dir, self.img_dir, self.params_dir]:
+                if directory.exists():
+                    for file in directory.iterdir():
+                        if file.is_file():
+                            file.unlink()
+                        elif file.is_dir():
+                            import shutil
+                            shutil.rmtree(file)
         
         # Create fresh directories
         for directory in [self.vtk_dir, self.img_dir, self.params_dir]:
@@ -505,6 +509,27 @@ class PipeSimulation2D:
         )
 
         rho, u = macro(f_0)
+        
+        # Check for NaN or infinity values in macroscopic quantities
+        if np.any(np.isnan(rho)) or np.any(np.isinf(rho)):
+            raise ValueError(
+                "ERROR: NaN or infinity detected in density (rho) field. This indicates numerical instability.\n"
+                "Possible causes:\n"
+                "1. Relaxation parameter (tau or omega) is too small or too close to 0.5\n"
+                "2. Inlet velocity is too high, causing Mach number > 0.1\n"
+                "3. Complex geometry with sharp corners\n"
+                f"Current parameters: tau={1.0/self.omega:.3f}, omega={self.omega:.3f}, max_velocity={self.u_max:.3f}"
+            )
+            
+        if np.any(np.isnan(u)) or np.any(np.isinf(u)):
+            raise ValueError(
+                "ERROR: NaN or infinity detected in velocity field. This indicates numerical instability.\n"
+                "Possible causes:\n"
+                "1. Relaxation parameter (tau or omega) is too small or too close to 0.5\n"
+                "2. Inlet velocity is too high, causing Mach number > 0.1\n"
+                "3. Complex geometry with sharp corners\n"
+                f"Current parameters: tau={1.0/self.omega:.3f}, omega={self.omega:.3f}, max_velocity={self.u_max:.3f}"
+            )
 
         # Calculate Wall Shear Stress (WSS) using the external function
         carreau_yasuda_params = {}
@@ -636,48 +661,52 @@ class PipeSimulation2D:
         prefix = f"pipe_{bc_type}_{col_type}"
         save_fields_vtk(fields, output_dir=vtk_path, timestep=i, prefix=prefix)
         
-        # Save image with fixed colorbar range in images subdirectory
-        # Use theoretical maximum velocity as upper bound
-        vmin = 0.0
-        # Convert to physical units for the comment (LU * dx/dt = m/s)
-        vmax = self.u_max * 1.5     # 50% margin over max velocity (physical: ~{self.u_max * self.dx/self.dt * 1.5:.2f} m/s)
-        print(f"Saving image with vmin={vmin}, vmax={vmax}")
-        print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
-        print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))
-        print("u_y values:", np.min(fields["u_y"]), np.max(fields["u_y"]))
-        print("u_magnitude values:", np.min(fields["u_magnitude"]), np.max(fields["u_magnitude"]))
+        # Only generate PNG images if save_png flag is True
+        if self.save_png:
+            # Save image with fixed colorbar range in images subdirectory
+            # Use theoretical maximum velocity as upper bound
+            vmin = 0.0
+            # Convert to physical units for the comment (LU * dx/dt = m/s)
+            vmax = self.u_max * 1.5     # 50% margin over max velocity
+            print(f"Saving PNGs with vmin={vmin}, vmax={vmax}")
+            print("rho values:", np.min(fields["rho"]), np.max(fields["rho"]))
+            print("u_x values:", np.min(fields["u_x"]), np.max(fields["u_x"]))
+            print("u_y values:", np.min(fields["u_y"]), np.max(fields["u_y"]))
+            print("u_magnitude values:", np.min(fields["u_magnitude"]), np.max(fields["u_magnitude"]))
 
-        # Generate velocity field image
-        save_image(
-            fields["u_magnitude"],
-            prefix=str(self.img_dir / f"{prefix}_"),
-            timestep=i,
-            vmin=vmin,
-            vmax=vmax
-        )
-        
-        # Generate WSS magnitude image if available
-        if wss_magnitude is not None:
-            # Use a reasonable scale for WSS
-            wss_vmax = np.max(wss_magnitude) * 1.1  # 10% margin
+            # Generate velocity field image
             save_image(
-                fields["wss_magnitude"],
-                prefix=str(self.img_dir / f"{prefix}_wss_"),
+                fields["u_magnitude"],
+                prefix=str(self.img_dir / f"{prefix}_"),
                 timestep=i,
-                vmin=0.0,
-                vmax=wss_vmax,
-                cmap='hot'  # Use a different colormap for WSS
+                vmin=vmin,
+                vmax=vmax
             )
             
-            # Generate wall mask image
-            save_image(
-                fields["wall_mask"],
-                prefix=str(self.img_dir / f"{prefix}_wall_"),
-                timestep=i,
-                vmin=0.0,
-                vmax=1.0,
-                cmap='binary'  # Use binary colormap for wall mask
-            )
+            # Generate WSS magnitude image if available
+            if wss_magnitude is not None:
+                # Use a reasonable scale for WSS
+                wss_vmax = np.max(wss_magnitude) * 1.1  # 10% margin
+                save_image(
+                    fields["wss_magnitude"],
+                    prefix=str(self.img_dir / f"{prefix}_wss_"),
+                    timestep=i,
+                    vmin=0.0,
+                    vmax=wss_vmax,
+                    cmap='hot'  # Use a different colormap for WSS
+                )
+                
+                # Generate wall mask image
+                save_image(
+                    fields["wall_mask"],
+                    prefix=str(self.img_dir / f"{prefix}_wall_"),
+                    timestep=i,
+                    vmin=0.0,
+                    vmax=1.0,
+                    cmap='binary'  # Use binary colormap for wall mask
+                )
+        else:
+            print("PNG generation skipped (--generate-pngs flag not set)")
                 
         post_process_time = time.time() - post_process_start
         return post_process_time
@@ -689,6 +718,19 @@ class PipeSimulation2D:
             filename_prefix (str): Prefix for the output JSON file
             final_metrics (dict): Dictionary containing final simulation metrics
         """
+        # Helper function to convert NumPy arrays to lists for JSON serialization
+        def numpy_to_json_serializable(obj):
+            if isinstance(obj, (np.ndarray, np.number)):
+                return obj.tolist()
+            elif isinstance(obj, (list, tuple)):
+                return [numpy_to_json_serializable(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {key: numpy_to_json_serializable(val) for key, val in obj.items()}
+            elif isinstance(obj, (int, float, str, bool, type(None))):
+                return obj
+            else:
+                return str(obj)  # Convert other types to strings
+    
         # Get collision operator details
         collision_type = "BGK" if not self.use_non_newtonian_bgk else "BGKNonNewtonian"
         collision_details = {}
@@ -708,7 +750,7 @@ class PipeSimulation2D:
                         "dx_physical": self.stepper.collision.dx_physical,
                         "dt_physical": self.stepper.collision.dt_physical
                     }
-        
+    
         # Create custom filename prefix if not provided
         if filename_prefix is None:
             bc_type = "tdzh" if self.use_time_dependent_zou_he else "zh"
@@ -795,8 +837,11 @@ class PipeSimulation2D:
         # Generate filename with timestamp
         filename = self.params_dir / f"{filename_prefix}.json"
         
+        # Convert all NumPy arrays and other non-serializable objects to JSON serializable types
+        serializable_parameters = numpy_to_json_serializable(parameters)
+        
         with open(filename, 'w') as f:
-            json.dump(parameters, f, indent=4)
+            json.dump(serializable_parameters, f, indent=4)
         
         print(f"Parameters and performance metrics saved to {filename}")
         print(f"Boundary condition: {'Time-dependent Zou-He' if self.use_time_dependent_zou_he else 'Standard Zou-He'}")
