@@ -1,7 +1,5 @@
 # Aneurysm Simulation and Visualization
 
-Please note that the repository is very cluttered and may have some bugs. 
-
 This repository contains a comprehensive solution for simulating and visualizing blood flow in aneurysms. The project consists of two main components:
 
 1. **Simulation Source (`simulation_src/`)**: A computational fluid dynamics (CFD) simulation framework for modeling blood flow in arterial geometries with aneurysms.
@@ -20,6 +18,7 @@ This repository contains a comprehensive solution for simulating and visualizing
   - [Running Simulations](#running-simulations)
   - [Customizing Simulations](#customizing-simulations)
 - [Visualization Tools](#visualization-tools)
+  - [ParaView Visualization](#paraview-visualization)
   - [VTK Visualization](#vtk-visualization)
   - [Interactive Analysis](#interactive-analysis)
   - [Available Visualizations](#available-visualizations)
@@ -32,7 +31,7 @@ This repository contains a comprehensive solution for simulating and visualizing
 ### System Requirements
 - CUDA-compatible NVIDIA GPU (recommended for faster simulations)
 - Docker and Docker Compose
-- 16GB+ RAM. 32GB will be faster
+- 8GB+ RAM
 - 5GB+ free disk space
 
 ### Software Dependencies
@@ -43,7 +42,7 @@ All dependencies are handled by the Docker container. If running locally:
 
 ## Quick Start with Docker
 
-The easiest way to run simulations and visualisations is by using the provided Docker container. There are multiple ways to build and run the container:
+The easiest way to run simulations and visualizations is using the provided Docker container. There are multiple ways to build and run the container:
 
 ### Using build_and_run_docker.py Script
 
@@ -103,12 +102,12 @@ docker exec dissertation python simulation_src/aneurysm_run.py
 
 ## Simulation Source Code
 
-The simulation source code is located in the `simulation_src/` directory and provides a computational fluid dynamics framework for modelling blood flow.
+The simulation source code is located in the `simulation_src/` directory and provides a computational fluid dynamics framework for modeling blood flow.
 
 ### Features
 
 - Lattice Boltzmann Method (LBM) for fluid dynamics
-- Non-Newtonian blood flow modelling with Carreau-Yasuda model
+- Non-Newtonian blood flow modeling with Carreau-Yasuda model
 - Pulsatile flow support for realistic cardiac cycles
 - GPU acceleration for faster simulations
 - Customizable boundary conditions
@@ -151,25 +150,37 @@ This script will execute all configured simulations sequentially. **Note that si
 - `--aneurysm`: Include aneurysm geometry (default: True)
 - `--pulsatile`: Use pulsatile flow (default: True)
 
-### Customising Simulations
+### Customizing Simulations
 
-To customise the simulation parameters, modify the configuration files:
+To customize the simulation parameters, modify the configuration files:
 
 1. Edit the `params/` directory files for flow parameters
 2. Create custom boundary conditions in `simulation_src/boundary_conditions/`
 3. Modify the geometry in `simulation_src/utils/geometry.py`
 
-## Visualisation Tools
+## Visualization Tools
 
-The visualisation tools in `visualisation_src/` provide interactive ways to analyse simulation results.
+The visualization tools in `visualisation_src/` provide interactive ways to analyze simulation results.
 
-### VTK Visualisation
+### ParaView Visualization
 
-The main visualisation notebook is `vtk_visualization.ipynb`, which provides:
+The primary aneurysm visualization was performed using ParaView, a powerful open-source visualization application. A ParaView state file is included in the repository:
 
-1. Interactive field visualisation
+- `visualisation_src/aneurysm_viewer_5_11_2.pvsm`: This ParaView state file contains the visualization setup used for the main aneurysm analysis.
+
+To use this file:
+1. Install ParaView (https://www.paraview.org/download/)
+2. Open ParaView and select "Load State" from the File menu
+3. Navigate to the `aneurysm_viewer_5_11_2.pvsm` file and open it
+4. When prompted for file paths, update them to match your local simulation results directory
+
+### VTK Visualization
+
+The main visualization notebook is `vtk_visualization.ipynb`, which provides:
+
+1. Interactive field visualization
 2. Multi-frame analysis
-3. Vector field visualisation
+3. Vector field visualization
 4. Streamline generation
 5. Curl (vorticity) and divergence analysis
 
@@ -182,20 +193,20 @@ The project includes several objective-focused notebooks for verification and an
 - `visualisation_src/objective_3_visualiser.ipynb`: Evaluation of pulsatile flow implementation
 - `visualisation_src/objective_4_visualiser.ipynb`: Comprehensive aneurysm flow analysis
 
-These notebooks contain code to validate simulation results against theoretical expectations and visualise key metrics for each research objective.
+These notebooks contain code to validate simulation results against theoretical expectations and visualize key metrics for each research objective.
 
 ### Interactive Analysis
 
-To use the visualisation notebook:
+To use the visualization notebook:
 
 1. Start Jupyter Notebook (locally or via Docker)
 2. Open `visualisation_src/vtk_visualization.ipynb`
 3. Run the cells to load VTK files
 4. Use the interactive widgets to explore the data
 
-### Available Visualisations
+### Available Visualizations
 
-- **Field Visualisation**: View any scalar field (velocity magnitude, pressure, etc.)
+- **Field Visualization**: View any scalar field (velocity magnitude, pressure, etc.)
 - **Vector Field**: Interactive visualization of velocity vectors
 - **Curl Analysis**: Analyze vorticity in the flow
 - **Divergence Analysis**: Examine flow expansion/contraction
@@ -208,13 +219,13 @@ Simulation results are stored in multiple formats:
 
 - **VTK Files**: Contains full 3D data fields for velocity, pressure, and other variables
 - **Images**: Rendered snapshots of the simulation state
-- **Parameter Files**: Records of simulation parameters and metadata, including performance metrics
+- **Parameter Files**: Records of simulation parameters and metadata including performance metrics
 
 The default output location is the `results/` directory, with subdirectories for each simulation run. Logs are stored in `results/logs/` and include detailed performance information.
 
 ## Examples
 
-The `examples/` directory contains sample simulations and visualisations:
+The `examples/` directory contains sample simulations and visualizations:
 
 - Basic arterial flow
 - Aneurysm with pulsatile flow
@@ -236,7 +247,7 @@ The `examples/` directory contains sample simulations and visualisations:
 
 3. **Visualization Problems**:
    - Ensure VTK files are generated correctly
-   - Check file paths in the visualisation notebook
+   - Check file paths in the visualization notebook
    - Update matplotlib and ipywidgets if interactive widgets don't display correctly
 
 ### Getting Help
