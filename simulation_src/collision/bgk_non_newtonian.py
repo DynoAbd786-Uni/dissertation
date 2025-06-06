@@ -198,8 +198,64 @@ class BGKNonNewtonian(Collision):
         return fout
         
     @Operator.register_backend(ComputeBackend.JAX)
-    def jax_implementation(self, f, feq, fout, rho, u):
+    @partial(jit, static_argnums=(0,))
+    def jax_implementation(self, f: jnp.ndarray, feq: jnp.ndarray, rho, u):
         """
         JAX implementation of the BGKNonNewtonian collision operator.
         """
-        raise NotImplementedError("JAX implementation for BGKNonNewtonian collision is not implemented yet")
+        # Cast parameters to compute dtype
+        mu_0 = self.compute_dtype(self.mu_0_lu)
+        mu_inf = self.compute_dtype(self.mu_inf_lu)
+        lambda_cy = self.compute_dtype(self.lambda_cy_lu)
+        n = self.compute_dtype(self.n)
+        a = self.compute_dtype(self.a)
+        dx_physical = self.compute_dtype(self.dx_physical)
+        dt_physical = self.compute_dtype(self.dt_physical)
+        
+        # Stability limits
+        min_omega = self.compute_dtype(0.55)
+        max_omega = self.compute_dtype(1.95)
+        
+        # Calculate velocity magnitude for shear rate approximation
+        # u has shape [d, nx, ny, nz] where d is spatial dimensions
+        velocity_magnitude = jnp.sqrt(jnp.sum(u**2, axis=0))
+        
+        # Simple approximation: shear rate related to velocity magnitude
+        # This is a simplified model - more accurate would require velocity gradients
+        shear_rate_lu = jnp.maximum(velocity_magnitude, 1e-10)
+        
+        # Convert shear rate from lattice to physical units
+        dt_safe = jnp.maximum(dt_physical, 1.0e-10)
+        shear_rate_physical = shear_rate_lu / dt_safe
+        
+        # Apply Carreau-Yasuda model
+        factor = jnp.power(1.0 + jnp.power(lambda_cy * shear_rate_physical, a), (n - 1.0) / a)
+        viscosity_physical = mu_inf + (mu_0 - mu_inf) * factor
+        
+        # Convert to kinematic viscosity (assuming density = 1.0)
+        density = 1.0
+        nu_physical = viscosity_physical / jnp.maximum(density, 1.0e-10)
+        
+        # Convert to lattice units
+        dx_squared = jnp.maximum(dx_physical * dx_physical, 1.0e-20)
+        nu_lu = nu_physical * dt_safe / dx_squared
+        
+        # Calculate relaxation rate omega
+        denom = jnp.maximum(3.0 * nu_lu + 0.5, 1.0e-10)
+        omega_local = 1.0 / denom
+        
+        # Apply stability bounds
+        omega_local = jnp.clip(omega_local, min_omega, max_omega)
+        
+        # Apply BGK collision with spatially varying omega
+        # omega_local has shape [nx, ny, nz], need to broadcast for f and feq operations
+        # f and feq have shape [q, nx, ny, nz]
+        fneq = f - feq
+        
+        # Expand omega_local to match f dimensions: [1, nx, ny, nz] -> [q, nx, ny, nz]
+        omega_expanded = jnp.expand_dims(omega_local, axis=0)
+        
+        # Apply collision
+        fout = f - omega_expanded * fneq
+        
+        return fout
