@@ -417,7 +417,7 @@ class AneurysmSimulation2D:
                 
                 # Post-processing with reset timestep counter
                 post_start = time.time()
-                self.post_process(i)  # Use reset counter i instead of i+warmup_steps
+                # self.post_process(i)  # Use reset counter i instead of i+warmup_steps
                 post_time = time.time() - post_start
                 total_post_process_time += post_time
                 post_process_calls += 1

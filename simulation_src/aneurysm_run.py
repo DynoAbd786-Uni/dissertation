@@ -3,6 +3,7 @@ from xlb import ComputeBackend, PrecisionPolicy
 from utils.load_csv import load_csv_data
 from utils.directory_utils import delete_directory_if_exists
 import xlb
+import jax
 import warp as wp
 from utils.constants import load_profile_values
 import numpy as np
@@ -153,6 +154,12 @@ def run_for_duration(simulation, duration_seconds, dt, post_process_interval=Non
 
 
 if __name__ == "__main__":
+    import os
+    os.environ['XLA_FLAGS'] = (
+        '--xla_gpu_triton_gemm_any=True '
+        '--xla_gpu_enable_latency_hiding_scheduler=true '
+    )
+
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Aneurysm flow simulation with Non-Newtonian BGK and Time-Dependent Zou-He')
     parser.add_argument('--generate-pngs', action='store_true',
