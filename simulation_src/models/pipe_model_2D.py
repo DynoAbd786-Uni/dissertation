@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import jax
 
-from boundary_conditions.direct_bc import TimeDependentZouHeBC
+from boundary_conditions.bc_zouhe_time_dependant import TimeDependentZouHeBC
 from stepper.custom_nse_stepper import CustomNSEStepper
 from utils.wss_calculation import calculate_wss as wss_calculator
 
@@ -186,7 +186,7 @@ class PipeSimulation2D:
         
         # Use TimeDependentZouHeBC for time-dependent boundary conditions
         if self.use_time_dependent_zou_he:
-            from boundary_conditions.direct_bc import TimeDependentZouHeBC
+            from boundary_conditions.bc_zouhe_time_dependant import TimeDependentZouHeBC
 
             # Check if the profile is valid
             if not self.flow_profile:
@@ -201,6 +201,7 @@ class PipeSimulation2D:
             # Inlet: use new direct BC
             bc_inlet = TimeDependentZouHeBC(
                 bc_type="velocity",
+                spacial_profile=self.bc_profile(),
                 indices=inlet,
                 dt=self.dt,
                 dx=self.dx,
@@ -216,8 +217,9 @@ class PipeSimulation2D:
             # Standard ZouHeBC for steady-state boundary conditions
             bc_inlet = ZouHeBC(
                 bc_type="velocity",
+                profile=self.bc_profile(),
                 indices=inlet,
-                prescribed_value=[self.input_params.get("max_velocity_lu", 0.04), 0.0] # Prescribed velocity at inlet
+                # prescribed_value=[self.input_params.get("max_velocity_lu", 0.04), 0.0] # Prescribed velocity at inlet
             )
 
         # Walls: bounce-back boundary condition
@@ -227,6 +229,44 @@ class PipeSimulation2D:
         bc_outlet = ExtrapolationOutflowBC(indices=outlet)
         
         self.boundary_conditions = [bc_walls, bc_inlet, bc_outlet]
+
+    # PARTIALLY COMPLETED POUSIELLE FLOW PROFILE
+    def bc_profile(self):
+        u_max = self.u_max  # u_max = 0.04
+        # Get the grid dimensions for the y and z directions
+        H_y = float(self.grid_shape[1] - 1)  # Height in y direction
+        # H_z = float(self.grid_shape[2] - 1)  # Height in z direction
+
+        @wp.func
+        def bc_profile_warp(index: wp.vec3i):
+            # Poiseuille flow profile: parabolic velocity distribution
+            y = self.precision_policy.store_precision.wp_dtype(index[1])
+            # z = self.precision_policy.store_precision.wp_dtype(index[2])
+
+            # Calculate normalized distance from center
+            y_center = y - (H_y / 2.0)
+            r_squared = (2.0 * y_center / H_y) ** 2.0
+
+            # Parabolic profile: u = u_max * (1 - r²)
+            return wp.vec(u_max * wp.max(0.0, 1.0 - r_squared), length=1)
+
+        def bc_profile_jax():
+            y = jnp.arange(self.grid_shape[1])
+
+            # Calculate normalized distance from center
+            y_center = y - (H_y / 2.0)
+            r_squared = (2.0 * y_center / H_y) ** 2.0
+
+            # Parabolic profile for x velocity, zero for y and z
+            u_x = u_max * jnp.maximum(0.0, 1.0 - r_squared)
+            u_y = jnp.zeros_like(u_x)
+
+            return jnp.stack([u_x, u_y])
+
+        if self.backend == ComputeBackend.JAX:
+            return bc_profile_jax
+        elif self.backend == ComputeBackend.WARP:
+            return bc_profile_warp
 
     def setup_stepper(self):
         # Choose stepper based on flag

@@ -331,7 +331,7 @@ if __name__ == "__main__":
     print("\nRunning simulation...")
     simulation.run_for_duration(
         duration_seconds=1.0,
-        warmup_seconds=2.0    # Run for 2.0 seconds before starting visualization
+        warmup_seconds=0.0    # Run for 2.0 seconds before starting visualization
     )
     
     print("\nSimulation complete!")

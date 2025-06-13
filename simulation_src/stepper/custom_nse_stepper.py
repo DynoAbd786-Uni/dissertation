@@ -17,7 +17,7 @@ from xlb.helper.nse_solver import create_nse_fields
 from xlb import DefaultConfig
 import warp as wp
 
-from boundary_conditions.direct_bc import TimeDependentZouHeBC  # Import custom BC
+from boundary_conditions.bc_zouhe_time_dependant import TimeDependentZouHeBC  # Import custom BC
 from collision.bgk_non_newtonian import BGKNonNewtonian  # Import custom collision operator
 
 

@@ -16,12 +16,12 @@ class TimeDependentZouHeBC(BoundaryCondition):
     but adds time dependence to the velocity.
     """
     
-    def __init__(self, dt, dx, u_max, frequency, flow_profile=None,
+    def __init__(self, dt, dx, u_max, frequency, flow_profile=None, spacial_profile=None,
                  bc_type="velocity", indices=None,
                  **kwargs):  # Keep kwargs for parent class
-        """Initialize the DirectTimeDependentBC class"""
+        """Initialize the TimeDependentZouHeBC class"""
         # Verify bc_type is supported
-        assert bc_type == "velocity", "DirectTimeDependentBC only supports 'velocity' type boundary conditions"
+        assert bc_type == "velocity", "TimeDependentZouHeBC only supports 'velocity' type boundary conditions"
         self.bc_type = bc_type
         
         # Store time parameters
@@ -41,6 +41,8 @@ class TimeDependentZouHeBC(BoundaryCondition):
         self.num_points = 0
         self.period = 0.0
         self.jax_profile_times = None
+
+        self.profile = spacial_profile
         
         # Add equilibrium operator like ZouHeBC
         self.equilibrium_operator = QuadraticEquilibrium()
@@ -302,35 +304,29 @@ class TimeDependentZouHeBC(BoundaryCondition):
             # Find normal vector
             normals = get_normal_vectors(_missing_mask)
             
-            # Calculate time-dependent velocity
+            # Calculate time-dependent velocity (your intended flow profile)
             t = _dt * wp.float32(timestep)
             
-            
-            # if timestep % 1000 == 0 and index[0] == 0 and index[1] == 5:
-            #     wp.printf("[DirectBC] t=%f, omega*t=%f, angle=%f\n", t, _omega * t, angle)
-            
             if _use_csv_profile == 1:
-                # Normalize time to 0-1 range (1-second cycle)
                 normalized_time = fmod(t, wp.float32(1.0))
-                
-                # Use our custom interpolation function
                 prescribed_velocity = interpolate_flow_profile(normalized_time)
-                
-                # Scale by maximum velocity
-                # prescribed_velocity = _u_max * 
-                
-                # Debug print occasionally
-                # if timestep % 10000 == 0 and index[0] == 0 and index[1] == 5:
-                #     wp.printf("[DirectBC] t=%f, normalized_time=%f, csv_velocity=%f\n", 
-                #              t, normalized_time, prescribed_velocity)
             else:
-                # Use sinusoidal flow profile
                 prescribed_velocity = sinusoidal_flow(t)
             
-            # Print debug info occasionally
-            # if timestep % 1000 == 0 and index[0] == 0 and index[1] == 5:
-            #     wp.printf("[DirectBC] t=%f, velocity=%f, normal=(%f,%f)\n", 
-            #               t, prescribed_velocity, normals[0], normals[1])
+            # Only apply spatial profile scaling if we have a spatial profile
+            if wp.static(self.profile is not None):
+                # Retrieve stored spatial profile from aux data
+                spatial_factor = wp.float32(1.0)  # Default uniform
+                
+                for l in range(_q):
+                    if _missing_mask[l] == wp.uint8(1):
+                        # Get stored spatial profile value and normalize it
+                        stored_spatial_value = f_post[_opp_indices[l], index[0], index[1], index[2]]
+                        spatial_factor = stored_spatial_value / _u_max  # Normalize to factor
+                        break
+                
+                # Apply spatial scaling to temporal profile
+                prescribed_velocity = prescribed_velocity * spatial_factor
             
             # Create velocity vector
             _u = prescribed_velocity * normals
@@ -352,7 +348,7 @@ class TimeDependentZouHeBC(BoundaryCondition):
         if self.bc_type == "velocity":
             functional = time_dependent_velocity_functional
         else:
-            raise NotImplementedError(f"BC type '{self.bc_type}' not supported in DirectTimeDependentBC")
+            raise NotImplementedError(f"BC type '{self.bc_type}' not supported in TimeDependentZouHeBC")
         
         # Use parent's kernel construction with our functional
         kernel = self._construct_kernel(functional)
@@ -383,7 +379,17 @@ class TimeDependentZouHeBC(BoundaryCondition):
         return f_post
     
     def aux_data_init(self, f_0, f_1, bc_mask, missing_mask):
-        """Initialize with constant velocity (timestep 0)"""
+        """Initialize with spatial profile if provided"""
+        if self.profile is not None and self.compute_backend == ComputeBackend.WARP:
+            # Use parent's aux data initialization to store spatial profile
+            wp.launch(
+                self._construct_aux_data_init_kernel(self.profile),
+                inputs=[f_0, f_1, bc_mask, missing_mask],
+                dim=f_0.shape[1:],
+            )
+        elif self.profile is not None and self.compute_backend == ComputeBackend.JAX:
+            self.prescribed_values = self.profile()
+        
         self.is_initialized_with_aux_data = True
         return f_0, f_1
     
