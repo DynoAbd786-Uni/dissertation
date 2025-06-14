@@ -11,9 +11,11 @@ This repository contains a comprehensive solution for simulating and visualizing
 - **Advanced Blood Flow Modeling**: Non-Newtonian Carreau-Yasuda rheology model for realistic blood viscosity
 - **Comprehensive Spatial Profiles**: Support for uniform, Poiseuille, and blunted paraboloid velocity profiles optimized for blood flow
 - **Pulsatile Flow Support**: Time-dependent boundary conditions with realistic cardiac cycle profiles
-- **Multi-Domain Analysis**: Both standard and long pipe configurations for detailed performance comparison
-- **Automated Batch Processing**: Comprehensive parameter studies with organized results management
+- **Multi-Domain Analysis**: Both standard (751×330) and long pipe (10,001×86) configurations for performance scaling analysis
+- **Intelligent Batch Processing**: Automated execution of 18 total configurations (15 pipe + 3 aneurysm) with organized results management
+- **Performance Scaling**: Domain-size dependent MLUPS optimization (3,000-16,000 MLUPS range)
 - **Professional Visualization**: VTK output for ParaView analysis and interactive Jupyter notebooks
+- **Robust Error Handling**: Comprehensive safety checks, validation, and user-friendly error messages
 
 ## Table of Contents
 
@@ -27,16 +29,31 @@ This repository contains a comprehensive solution for simulating and visualizing
   - [Performance Characteristics](#performance-characteristics)
   - [Directory Structure](#directory-structure)
   - [Running Simulations](#running-simulations)
+  - [Pipe Type Configurations](#pipe-type-configurations)
   - [Spatial Velocity Profiles](#spatial-velocity-profiles)
+  - [Batch Execution System](#batch-execution-system)
   - [Customizing Simulations](#customizing-simulations)
 - [Visualization Tools](#visualization-tools)
   - [VTK Visualization](#vtk-visualization)
   - [Interactive Analysis](#interactive-analysis)
   - [Available Visualizations](#available-visualizations)
 - [Data Output](#data-output)
+  - [Naming Convention](#naming-convention)
+  - [Results Organization](#results-organization)
 - [Performance Analysis](#performance-analysis)
+  - [MLUPS Performance Scaling](#mlups-performance-scaling)
+  - [Domain-Size Performance Comparison](#domain-size-performance-comparison)
+  - [Benchmarking Commands](#benchmarking-commands)
+- [Configuration Matrix](#configuration-matrix)
 - [Examples](#examples)
+  - [Quick Start Commands](#quick-start-commands)
+  - [Advanced Usage](#advanced-usage)
+  - [Performance Testing](#performance-testing)
 - [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Performance Optimization Tips](#performance-optimization-tips)
+  - [Getting Help](#getting-help)
+- [Recent Improvements and Features](#recent-improvements-and-features)
 
 ## Requirements
 
@@ -306,12 +323,14 @@ The simulation framework supports three spatial velocity profiles:
 - **Use Case**: Testing, validation, and comparison baseline
 - **Characteristics**: Constant velocity magnitude across the channel height
 - **Physics**: Non-physical but useful for numerical validation
+- **Implementation**: Uses `spacial_profile=None` parameter
 
 #### 2. **Poiseuille Profile** (`--spatial-profile poiseuille`)  
 - **Description**: Parabolic velocity distribution for developed laminar flow
 - **Use Case**: Fully developed flow in long straight channels
 - **Characteristics**: Maximum velocity at center, zero at walls
 - **Physics**: Analytical solution for steady laminar flow
+- **Formula**: `u(r) = u_max * (1 - (2r/H)²)`
 
 #### 3. **Blunted Paraboloid Profile** (`--spatial-profile blunted_paraboloid`)
 - **Description**: Power-law profile optimized for blood flow
@@ -319,6 +338,65 @@ The simulation framework supports three spatial velocity profiles:
 - **Characteristics**: Flattened center with steep near-wall gradients
 - **Physics**: Power-law exponent n=1.7 matches blood flow characteristics
 - **Configuration**: `--power-law-exponent 1.7` (adjustable)
+- **Formula**: `u(r) = Scale(t) * u_max * (1 - (r/R)^n)`
+
+### Pipe Type Configurations
+
+The simulation framework supports two distinct pipe geometries for performance analysis:
+
+#### **Standard Pipe** (`--standard-pipe-only`)
+- **Grid Size**: 751 × 330 (247,830 nodes)
+- **Characteristics**: Detailed resolution for comprehensive flow analysis
+- **Performance**: 3,000-3,700 MLUPS (typical)
+- **Use Case**: Detailed fluid dynamics studies and validation
+- **Configurations**: 12 combinations (2 BC × 2 CO × 3 SP)
+
+#### **Long Pipe** (`--long-pipe`)
+- **Grid Size**: 10,001 × 86 (860,086 nodes)
+- **Characteristics**: Extended domain for high-performance scaling analysis
+- **Performance**: 8,000-13,000 MLUPS (typical)
+- **Use Case**: Performance benchmarking and GPU utilization studies
+- **Configurations**: 3 combinations (fixed ZH BC + Non-Newtonian BGK + 3 SP)
+
+**Key Differences**:
+- **Domain Scale**: Long pipe has 3.5× more nodes than standard pipe
+- **Aspect Ratio**: Long pipe optimized for memory bandwidth vs compute ratio
+- **GPU Efficiency**: Long pipe achieves 2-3× higher MLUPS due to better parallelization
+- **Physics Focus**: Standard pipe for detailed analysis, long pipe for performance scaling
+
+### Batch Execution System
+
+The comprehensive batch execution system allows running multiple simulation configurations automatically:
+
+#### **Default Behavior** (runs both standard and long pipes)
+```bash
+# Runs 18 total configurations: 15 standard pipe + 3 long pipe
+python run_all_sim_configs.py
+```
+
+#### **Selective Execution Options**
+```bash
+# Run only standard pipe configurations (12 combinations)
+python run_all_sim_configs.py --standard-pipe-only
+
+# Run only long pipe configurations (3 combinations)  
+python run_all_sim_configs.py --long-pipe
+
+# Run only aneurysm simulations (3 combinations)
+python run_all_sim_configs.py --aneurysm-only
+```
+
+#### **Combination Matrix**
+- **Standard Pipe**: 2 boundary conditions × 2 collision operators × 3 spatial profiles = 12 combinations
+- **Long Pipe**: 1 boundary condition × 1 collision operator × 3 spatial profiles = 3 combinations  
+- **Aneurysm**: 1 boundary condition × 1 collision operator × 3 spatial profiles = 3 combinations
+- **Total**: 18 configurations in complete study
+
+#### **Performance Estimation**
+- **Individual Standard Pipe**: ~2-3 minutes each (12 × 3 min = 36 min)
+- **Individual Long Pipe**: ~3-4 minutes each (3 × 4 min = 12 min)
+- **Individual Aneurysm**: ~4-5 minutes each (3 × 5 min = 15 min)
+- **Complete Batch**: ~60-70 minutes total on modern GPU hardware
 
 ### Simulation Configurations Matrix
 
@@ -373,43 +451,71 @@ To use the visualization notebook:
 
 Simulation results are stored in multiple organized formats with comprehensive metadata:
 
-### Output Structure
+### Results Organization
 
+#### **Pipe Flow Results** (`results/pipe_flow/`)
 ```
-results/
-├── pipe_flow/                          # Pipe simulation results
-│   ├── zh_bgk_uniform_standard/        # Standard configurations
-│   ├── zh_nnbgk_blunted_standard/      # 
-│   ├── tdzh_nnbgk_poiseuille_standard/ # 
-│   ├── zh_nnbgk_uniform_long/          # Long pipe configurations
-│   └── ...                             # (15 pipe configurations total)
-├── aneurysm_flow/                      # Aneurysm simulation results  
-│   ├── CCA_simulation_results_nnbgk_tdzh_blunted/
-│   └── ...                             # (Aneurysm configurations)
-└── logs/                               # Simulation execution logs
-    ├── pipe_zh_nnbgk_uniform_long_*.log
-    ├── aneurysm_tdzh_nnbgk_blunted_*.log
-    └── ...
+results/pipe_flow/
+├── zh_bgk_uniform_standard/         # Standard BC + Standard CO + Uniform + Standard Pipe
+├── zh_bgk_poiseuille_standard/      # Standard BC + Standard CO + Poiseuille + Standard Pipe
+├── zh_bgk_blunted_standard/         # Standard BC + Standard CO + Blunted + Standard Pipe
+├── zh_nnbgk_uniform_standard/       # Standard BC + Non-Newtonian CO + Uniform + Standard Pipe
+├── zh_nnbgk_poiseuille_standard/    # Standard BC + Non-Newtonian CO + Poiseuille + Standard Pipe
+├── zh_nnbgk_blunted_standard/       # Standard BC + Non-Newtonian CO + Blunted + Standard Pipe
+├── tdzh_bgk_uniform_standard/       # Time-dependent BC + Standard CO + Uniform + Standard Pipe
+├── tdzh_bgk_poiseuille_standard/    # Time-dependent BC + Standard CO + Poiseuille + Standard Pipe
+├── tdzh_bgk_blunted_standard/       # Time-dependent BC + Standard CO + Blunted + Standard Pipe
+├── tdzh_nnbgk_uniform_standard/     # Time-dependent BC + Non-Newtonian CO + Uniform + Standard Pipe
+├── tdzh_nnbgk_poiseuille_standard/  # Time-dependent BC + Non-Newtonian CO + Poiseuille + Standard Pipe
+├── tdzh_nnbgk_blunted_standard/     # Time-dependent BC + Non-Newtonian CO + Blunted + Standard Pipe
+├── zh_nnbgk_uniform_long/           # Standard BC + Non-Newtonian CO + Uniform + Long Pipe
+├── zh_nnbgk_poiseuille_long/        # Standard BC + Non-Newtonian CO + Poiseuille + Long Pipe
+└── zh_nnbgk_blunted_long/           # Standard BC + Non-Newtonian CO + Blunted + Long Pipe
 ```
 
-### File Types
+#### **Aneurysm Flow Results** (`results/aneurysm_flow/`)
+```
+results/aneurysm_flow/
+├── CCA_simulation_results_nnbgk_tdzh_uniform/      # Aneurysm + Uniform Profile
+├── CCA_simulation_results_nnbgk_tdzh_poiseuille/   # Aneurysm + Poiseuille Profile
+└── CCA_simulation_results_nnbgk_tdzh_blunted/      # Aneurysm + Blunted Profile (default)
+```
 
-- **VTK Files** (`*.vtk`): Complete 3D field data for ParaView visualization
-  - Velocity fields (u_x, u_y, u_magnitude)
-  - Pressure/density fields (rho)
-  - Wall shear stress (WSS) data
-  - Boundary masks (wall, inlet, outlet)
-  
-- **PNG Images** (`*.png`): Real-time visualization snapshots (optional)
-  - Velocity magnitude contours
-  - Wall shear stress distributions
-  - Boundary visualization
-  
-- **Parameter Files** (`*.json`): Complete simulation metadata
-  - Physical parameters (viscosity, time step, grid resolution)
-  - Numerical settings (backend, collision operator, boundary conditions)
-  - Performance metrics (MLUPS, runtime, efficiency)
-  - Reproducibility information
+#### **Log Files** (`results/logs/`)
+```
+results/logs/
+├── pipe_zh_bgk_uniform_standard_2025-06-14_12-00-30.log
+├── pipe_zh_nnbgk_blunted_long_2025-06-14_12-15-45.log
+├── aneurysm_tdzh_nnbgk_blunted_2025-06-14_12-21-30.log
+└── ...
+```
+
+Each simulation directory contains:
+- **VTK files**: `*.vtu` for ParaView visualization
+- **Parameter files**: `*_params.json` with complete simulation configuration
+- **Performance metrics**: MLUPS data and timing information
+- **PNG files**: Quick visualization images (when `--generate-pngs` used)
+
+## Configuration Matrix
+
+The simulation framework provides a comprehensive matrix of configurations for systematic studies:
+
+| Configuration Type | Boundary Conditions | Collision Operators | Spatial Profiles | Total Combinations |
+|-------------------|-------------------|-------------------|-----------------|-------------------|
+| **Standard Pipe** | 2 (ZH, TDZH) | 2 (BGK, NNBGK) | 3 (Uniform, Poiseuille, Blunted) | 12 |
+| **Long Pipe** | 1 (ZH) | 1 (NNBGK) | 3 (Uniform, Poiseuille, Blunted) | 3 |
+| **Aneurysm** | 1 (TDZH) | 1 (NNBGK) | 3 (Uniform, Poiseuille, Blunted) | 3 |
+| **Total** | | | | **18** |
+
+### Recommended Configuration Combinations
+
+| Study Type | Boundary Condition | Collision Operator | Spatial Profile | Use Case |
+|------------|------------------|------------------|-----------------|----------|
+| **Basic Validation** | Standard ZH | Standard BGK | Uniform | Simple flow validation |
+| **Fluid Mechanics** | Standard ZH | Standard BGK | Poiseuille | Classical laminar flow |
+| **Blood Flow** | Time-dependent ZH | Non-Newtonian BGK | Blunted Paraboloid | Realistic cardiovascular modeling |
+| **Performance Benchmark** | Standard ZH | Non-Newtonian BGK | Uniform | MLUPS optimization |
+| **Complete Study** | All | All | All | Comprehensive parameter analysis |
 
 ### Naming Convention
 
@@ -434,12 +540,27 @@ The simulation framework demonstrates domain-size dependent performance scaling:
 | **Long Pipe** | 10,001×86 | 860,086 | 8,000-13,000 | High performance |
 | **Aneurysm** | 1751×530 | 928,030 | 12,000-16,000 | Complex geometry |
 
-### Performance Optimization
+### Domain-Size Performance Comparison
 
-- **GPU Utilization**: Larger domains achieve higher MLUPS due to better parallelization
-- **Memory Bandwidth**: Optimal balance between compute and memory access
-- **Kernel Efficiency**: Better warp/thread block utilization in larger simulations
-- **Backend Selection**: Warp GPU > JAX GPU > JAX CPU for performance
+The key insight from MLUPS performance analysis is that **larger domains achieve significantly higher throughput**:
+
+#### **Why Long Pipes Outperform Standard Pipes**
+
+1. **GPU Occupancy**: 
+   - Standard pipe: 247,830 nodes → partial GPU utilization
+   - Long pipe: 860,086 nodes → near-optimal GPU saturation
+
+2. **Memory Access Patterns**:
+   - Larger domains improve memory bandwidth vs compute ratio
+   - Better cache utilization and coalesced memory access
+
+3. **Kernel Launch Overhead**:
+   - Fixed overhead per kernel launch amortized over more work
+   - Better warp/thread block efficiency in larger simulations
+
+4. **Parallelization Efficiency**:
+   - More work per GPU core with larger domains
+   - Reduced thread divergence and improved occupancy
 
 ### Benchmarking Commands
 
@@ -452,47 +573,65 @@ python simulation_src/run_all_sim_configs.py --pipe-only --long-pipe
 
 # Complete performance characterization
 python simulation_src/run_all_sim_configs.py --dry-run
+
+# Individual high-performance test
+python simulation_src/pipe_run.py \
+  --boundary-condition standard \
+  --collision-operator non-newtonian \
+  --spatial-profile uniform \
+  --long-pipe
 ```
 
 ## Examples
 
 The repository provides comprehensive examples for various simulation scenarios:
 
-### Quick Start Examples
+### Quick Start Commands
 
+#### **1. Basic Validation** (Fastest execution)
 ```bash
-# 1. Basic validation run (fastest)
 python simulation_src/pipe_run.py \
   --boundary-condition standard \
   --collision-operator standard \
   --spatial-profile uniform \
   --generate-pngs
+```
+**Expected**: ~3,000 MLUPS, 2-3 minutes runtime
 
-# 2. Realistic blood flow simulation  
+#### **2. Realistic Blood Flow** (Recommended for research)
+```bash
 python simulation_src/pipe_run.py \
   --boundary-condition time-dependent \
   --collision-operator non-newtonian \
   --spatial-profile blunted_paraboloid \
   --generate-pngs
+```
+**Expected**: ~3,500 MLUPS, 3-4 minutes runtime
 
-# 3. High-performance benchmark
+#### **3. High-Performance Benchmark** (Maximum MLUPS)
+```bash
 python simulation_src/pipe_run.py \
   --boundary-condition standard \
   --collision-operator non-newtonian \
   --spatial-profile uniform \
   --long-pipe \
   --generate-pngs
+```
+**Expected**: ~8,000-13,000 MLUPS, 3-4 minutes runtime
 
-# 4. Complete aneurysm analysis
+#### **4. Complete Aneurysm Analysis** (Complex geometry)
+```bash
 python simulation_src/aneurysm_run.py \
   --spatial-profile blunted_paraboloid \
   --generate-pngs
 ```
+**Expected**: ~12,000-16,000 MLUPS, 4-5 minutes runtime
 
-### Research-Grade Examples
+### Advanced Usage
 
+#### **Comprehensive Parameter Studies**
 ```bash
-# Comprehensive parameter study (18 simulations)
+# Complete simulation matrix (18 configurations)
 python simulation_src/run_all_sim_configs.py
 
 # Blood flow optimization study
@@ -503,7 +642,60 @@ python simulation_src/run_all_sim_configs.py \
 
 # Performance scaling analysis
 python simulation_src/run_all_sim_configs.py --pipe-only
+
+# Spatial profile comparison
+python simulation_src/run_all_sim_configs.py \
+  --pipe-only \
+  --boundary-condition time-dependent \
+  --collision-operator non-newtonian
 ```
+
+#### **Focused Configuration Studies**
+```bash
+# Standard vs long pipe performance comparison
+python simulation_src/run_all_sim_configs.py --pipe-only --standard-pipe-only
+python simulation_src/run_all_sim_configs.py --pipe-only --long-pipe
+
+# Boundary condition study
+python simulation_src/run_all_sim_configs.py \
+  --pipe-only \
+  --collision-operator non-newtonian \
+  --spatial-profile blunted_paraboloid
+
+# Collision operator comparison
+python simulation_src/run_all_sim_configs.py \
+  --pipe-only \
+  --boundary-condition time-dependent \
+  --spatial-profile blunted_paraboloid
+```
+
+### Performance Testing
+
+#### **Validation Commands** (Always run first)
+```bash
+# Quick configuration validation
+python simulation_src/run_all_sim_configs.py --dry-run --pipe-only
+
+# Individual simulation validation
+python simulation_src/pipe_run.py \
+  --boundary-condition standard \
+  --collision-operator standard \
+  --spatial-profile uniform \
+  --dry-run
+
+# Performance baseline test
+python simulation_src/pipe_run.py \
+  --boundary-condition standard \
+  --collision-operator non-newtonian \
+  --spatial-profile uniform \
+  --long-pipe
+```
+
+#### **Expected Performance Metrics**
+- **Standard Pipe**: 3,000-3,700 MLUPS (247k nodes)
+- **Long Pipe**: 8,000-13,000 MLUPS (860k nodes)  
+- **Aneurysm**: 12,000-16,000 MLUPS (928k nodes)
+- **Complete Batch**: ~60-70 minutes total
 
 ### Visualization Examples
 
@@ -515,6 +707,9 @@ jupyter notebook visualisation_src/vtk_visualization.ipynb
 
 # ParaView batch processing
 paraview results/pipe_flow/zh_nnbgk_blunted_standard/vtk/
+
+# Quick field analysis
+python visualisation_src/print_vtk_fields_debug.py
 ```
 
 ## Troubleshooting
@@ -650,40 +845,79 @@ python simulation_src/pipe_run.py \
 
 This simulation framework has been extensively enhanced with the following key improvements:
 
-### ✅ **Performance Optimizations**
-- **MLUPS Calculation Fixes**: Robust performance metrics with safety checks and accurate averaging
-- **Domain-Size Scaling**: Automatic optimization for different simulation scales
-- **GPU Utilization**: Enhanced parallelization for 8,000-16,000 MLUPS performance
+### ✅ **Performance Optimizations and MLUPS Analysis**
+- **Robust MLUPS Calculation**: Fixed variable name collisions, division by zero safety, and empty history handling
+- **Domain-Size Scaling Discovery**: Identified why larger domains achieve 2-3× higher MLUPS (8,000-16,000 vs 3,000-3,700)
+- **GPU Utilization Enhancement**: Long pipe configurations optimize memory bandwidth vs compute ratio for maximum throughput
+- **Mathematical Validation**: Comprehensive verification of performance metrics and timing calculations
+- **Safety Checks**: Robust error handling for edge cases in performance monitoring
 
-### ✅ **Advanced Spatial Profiles**  
-- **Three Profile Types**: Uniform, Poiseuille, and Blunted Paraboloid implementations
-- **Blood Flow Modeling**: Optimized power-law profiles (n=1.7) for realistic blood flow
-- **Flexible Configuration**: Command-line control over spatial velocity distributions
+### ✅ **Advanced Spatial Profiles System**  
+- **Three Profile Types**: Uniform (testing), Poiseuille (laminar flow), and Blunted Paraboloid (blood flow n=1.7)
+- **Flexible Configuration**: Command-line control over spatial velocity distributions with power-law exponent tuning
+- **Physical Accuracy**: Optimized profiles for realistic blood flow modeling and cardiovascular applications
+- **Implementation Excellence**: JAX/Warp backend compatibility with time-varying scale factor support
+- **Comprehensive Documentation**: Detailed guides in `SPATIAL_PROFILES_SUMMARY.md` and `UNIFORM_SPATIAL_PROFILE_IMPLEMENTATION.md`
 
-### ✅ **Comprehensive Batch System**
-- **Multi-Configuration Support**: 15 pipe + 3 aneurysm configuration matrix
-- **Intelligent Naming**: Organized results with descriptive directory names
-- **Performance Comparison**: Standard vs long pipe domains for scaling analysis
+### ✅ **Intelligent Batch Execution System**
+- **Default Multi-Configuration Support**: Runs 18 total configurations (15 pipe + 3 aneurysm) by default
+- **Pipe Type Intelligence**: Automatic handling of standard (12 combinations) vs long pipe (3 combinations) configurations
+- **Granular Control**: `--standard-pipe-only`, `--long-pipe`, `--aneurysm-only` flags for focused studies
+- **Smart Organization**: Descriptive directory names with pipe type distinction (`_standard` vs `_long`)
+- **Performance Estimation**: Intelligent runtime prediction and progress tracking
 
-### ✅ **Enhanced Usability**
-- **Improved CLI**: Comprehensive command-line options with validation
-- **Error Handling**: Robust error checking and user-friendly messages  
-- **Documentation**: Extensive guides and troubleshooting resources
+### ✅ **Comprehensive Naming and Organization**
+- **Consistent Nomenclature**: `{bc}_{co}_{sp}_{pipe_type}` format for all outputs
+- **Descriptive Abbreviations**: `zh`/`tdzh`, `bgk`/`nnbgk`, `uniform`/`poiseuille`/`blunted`, `standard`/`long`
+- **Organized Results Structure**: Separate directories prevent long pipe results from overwriting standard pipe results
+- **Intelligent Log Naming**: Timestamped logs with complete configuration information
+- **Metadata Preservation**: JSON parameter files with full simulation reproducibility data
 
-### ✅ **Professional Output**
-- **VTK Integration**: Full ParaView compatibility with rich field data
-- **Metadata Tracking**: Complete simulation parameters and performance metrics
-- **Reproducibility**: JSON parameter files for research reproducibility
+### ✅ **Enhanced Usability and Error Handling**
+- **Improved Command-Line Interface**: Comprehensive options with validation and help text
+- **Dry-Run Validation**: Test configurations without execution using `--dry-run` flag
+- **Robust Error Checking**: User-friendly messages for common configuration issues
+- **Performance Baseline Validation**: Expected MLUPS ranges for different hardware configurations
+- **Conflict Detection**: Automatic checking for incompatible command-line flag combinations
+
+### ✅ **Professional Output and Documentation**
+- **Complete VTK Integration**: Full ParaView compatibility with rich field data (velocity, pressure, WSS, boundary masks)
+- **Comprehensive Metadata**: JSON files with physical parameters, numerical settings, and performance metrics
+- **Research Reproducibility**: Complete simulation configuration preservation for scientific rigor
+- **Performance Tracking**: MLUPS histories, timing breakdowns, and efficiency metrics
+- **Visual Documentation**: PNG generation support for quick result assessment
+
+### ✅ **Technical Implementation Excellence**
+- **MLUPS Calculation Fixes**: Variable name collision resolution, safety checks, and mathematical validation
+- **Memory Management**: Optimized field storage and processing with domain-size appropriate algorithms
+- **Backend Optimization**: Enhanced JAX/Warp compatibility with automatic backend selection
+- **Configuration Matrix**: Systematic 18-configuration study design for comprehensive parameter analysis
+- **Long vs Standard Pipe Logic**: Special handling for different domain types with appropriate configuration restrictions
 
 ## 📊 Expected Performance Benchmarks
 
 When properly configured, you should see:
 
-- **Standard Pipe Simulations**: 3,000-3,700 MLUPS
-- **Long Pipe Simulations**: 8,000-13,000 MLUPS  
-- **Aneurysm Simulations**: 12,000-16,000 MLUPS
-- **Complete Batch Run**: ~15-20 minutes on modern GPU hardware
+- **Standard Pipe Simulations**: 3,000-3,700 MLUPS (247k nodes, detailed analysis)
+- **Long Pipe Simulations**: 8,000-13,000 MLUPS (860k nodes, high performance)  
+- **Aneurysm Simulations**: 12,000-16,000 MLUPS (928k nodes, complex geometry)
+- **Complete Batch Run**: ~60-70 minutes on modern GPU hardware (18 configurations)
+- **Performance Scaling**: 2-3× MLUPS improvement with larger domains due to better GPU utilization
+
+## 🔍 Key Technical Insights
+
+### **Domain-Size Performance Scaling**
+The framework demonstrates that MLUPS performance scales favorably with domain size due to:
+- **GPU Occupancy**: Larger domains saturate GPU cores more effectively
+- **Memory Bandwidth**: Better balance between compute and memory access patterns  
+- **Kernel Efficiency**: Reduced launch overhead amortization and improved thread utilization
+- **Parallelization**: Enhanced warp/thread block efficiency in larger computational domains
+
+### **Configuration Intelligence**
+- **Long Pipe Optimization**: Restricted to 3 combinations (ZH + NNBGK + 3 spatial profiles) for focused performance studies
+- **Standard Pipe Comprehensiveness**: Full 12 combinations for detailed fluid dynamics analysis
+- **Aneurysm Specialization**: Fixed TDZH + NNBGK configuration optimized for blood flow with 3 spatial profiles
 
 ---
 
-*This README reflects the comprehensive improvements made to create a production-ready CFD simulation framework optimized for blood flow analysis and high-performance computing.*
+*This README reflects the comprehensive improvements made to create a production-ready CFD simulation framework optimized for blood flow analysis, high-performance computing, and systematic parameter studies.*
