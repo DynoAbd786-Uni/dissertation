@@ -214,17 +214,51 @@ class AneurysmSimulation2D:
         self.outlet_indices = outlet
         self.wall_indices = walls
         
-        # Inlet: use new direct BC
-        bc_inlet = TimeDependentZouHeBC(
-            bc_type="velocity",
-            spacial_profile=self.bc_profile(),
-            indices=inlet,
-            dt=self.dt,
-            dx=self.dx,
-            u_max=self.u_max,
-            flow_profile=self.flow_profile,
-            frequency=1.0
-        )
+        # Create the spatial flow profile
+        self.spatial_profile = self.get_spatial_flow_profile()
+        spatial_profile_function = self.spatial_profile.get_profile_function() if self.spatial_profile is not None else None
+        
+        # Get spatial profile configuration for console output
+        profile_config = self.input_params.get("spatial_profile", {"type": "blunted_paraboloid"})
+        profile_type = profile_config.get("type", "blunted_paraboloid")
+        
+        # Print boundary condition configuration
+        print(f"Setting up boundary conditions for aneurysm simulation:")
+        print(f"  Boundary condition: Time-dependent Zou-He BC")
+        if self.spatial_profile is not None:
+            print(f"  Spatial profile: {self.spatial_profile.__class__.__name__} ({profile_type})")
+            if hasattr(self.spatial_profile, 'n'):
+                print(f"  Power-law exponent: {self.spatial_profile.n}")
+        else:
+            print(f"  Spatial profile: Uniform (flat velocity profile)")
+        print(f"  Flow profile: {self.flow_profile_name}")
+        print(f"  Max velocity: {self.u_max:.3f} LU")
+        
+        # Inlet: use time-dependent BC with spatial profile
+        if self.spatial_profile is None:
+            # Inlet: use new direct BC with spatial profile
+            bc_inlet = TimeDependentZouHeBC(
+                bc_type="velocity",
+                prescribed_value=[self.input_params.get("max_velocity_lu", 0.04), 0.0],
+                indices=inlet,
+                dt=self.dt,
+                dx=self.dx,
+                u_max=self.u_max,
+                flow_profile=self.flow_profile,
+                frequency=1.0
+            )
+        else:
+            # Inlet: use new direct BC with spatial profile
+            bc_inlet = TimeDependentZouHeBC(
+                bc_type="velocity",
+                spacial_profile=spatial_profile_function,
+                indices=inlet,
+                dt=self.dt,
+                dx=self.dx,
+                u_max=self.u_max,
+                flow_profile=self.flow_profile,
+                frequency=1.0
+            )
 
         # Walls: no-slip boundary condition
         bc_walls = FullwayBounceBackBC(indices=walls)
@@ -267,43 +301,75 @@ class AneurysmSimulation2D:
         step_times = []
         mlups_history = []
     
-    # PARTIALLY COMPLETED POUSIELLE FLOW PROFILE
+    # SPATIAL FLOW PROFILE - Updated to support multiple profile types
+    def get_spatial_flow_profile(self):
+        """
+        Select and create the appropriate spatial flow profile based on input parameters
+        
+        Returns:
+            SpatialFlowProfile or None: Instance of the selected profile class, or None for uniform profile
+        """
+        from profiles.spacial_flow_profiles import PoiseuilleProfile, BluntedParaboloidProfile
+        
+        # Get profile configuration from input parameters
+        profile_config = self.input_params.get("spatial_profile", {"type": "blunted_paraboloid"})
+        profile_type = profile_config.get("type", "blunted_paraboloid").lower()
+        
+        if profile_type == "uniform":
+            # Return None for uniform (flat) profile - boundary conditions will handle this
+            return None
+        elif profile_type == "poiseuille":
+            return PoiseuilleProfile(
+                grid_shape=self.grid_shape,
+                backend=self.backend,
+                precision_policy=self.precision_policy,
+                u_max=self.u_max
+            )
+        elif profile_type == "blunted_paraboloid":
+            # Get power-law parameters
+            n = profile_config.get("n", 1.7)  # Default for blood flow
+            scale_factor = profile_config.get("scale_factor", 1.0)
+            
+            return BluntedParaboloidProfile(
+                grid_shape=self.grid_shape,
+                backend=self.backend,
+                precision_policy=self.precision_policy,
+                u_max=self.u_max,
+                n=n,
+                scale_factor=scale_factor
+            )
+        else:
+            print(f"Warning: Unknown spatial profile type '{profile_type}', defaulting to blunted paraboloid for aneurysm")
+            return BluntedParaboloidProfile(
+                grid_shape=self.grid_shape,
+                backend=self.backend,
+                precision_policy=self.precision_policy,
+                u_max=self.u_max,
+                n=1.7,
+                scale_factor=1.0
+            )
+
     def bc_profile(self):
-        u_max = self.u_max  # u_max = 0.04
-        # Get the grid dimensions for the y and z directions
-        H_y = float(self.grid_shape[1] - 1)  # Height in y direction
-        # H_z = float(self.grid_shape[2] - 1)  # Height in z direction
+        """
+        Spatial flow profile method - now delegates to the modular spatial profile system
+        """
+        # Create the spatial flow profile
+        spatial_profile = self.get_spatial_flow_profile()
+        return spatial_profile.get_profile_function()
 
-        @wp.func
-        def bc_profile_warp(index: wp.vec3i):
-            # Poiseuille flow profile: parabolic velocity distribution
-            y = self.precision_policy.store_precision.wp_dtype(index[1])
-            # z = self.precision_policy.store_precision.wp_dtype(index[2])
-
-            # Calculate normalized distance from center
-            y_center = y - (H_y / 2.0)
-            r_squared = (2.0 * y_center / H_y) ** 2.0
-
-            # Parabolic profile: u = u_max * (1 - r²)
-            return wp.vec(u_max * wp.max(0.0, 1.0 - r_squared), length=1)
-
-        def bc_profile_jax():
-            y = jnp.arange(self.grid_shape[1])
-
-            # Calculate normalized distance from center
-            y_center = y - (H_y / 2.0)
-            r_squared = (2.0 * y_center / H_y) ** 2.0
-
-            # Parabolic profile for x velocity, zero for y and z
-            u_x = u_max * jnp.maximum(0.0, 1.0 - r_squared)
-            u_y = jnp.zeros_like(u_x)
-
-            return jnp.stack([u_x, u_y])
-
-        if self.backend == ComputeBackend.JAX:
-            return bc_profile_jax
-        elif self.backend == ComputeBackend.WARP:
-            return bc_profile_warp
+    # Update method to support time-varying scale factor for BluntedParaboloidProfile
+    def update_spatial_profile_scale(self, scale_factor):
+        """
+        Update the scale factor for time-varying profiles (e.g., BluntedParaboloidProfile)
+        
+        Args:
+            scale_factor (float): New scale factor based on time-varying flow rate
+        """
+        if hasattr(self, 'spatial_profile') and self.spatial_profile is not None and hasattr(self.spatial_profile, 'update_scale_factor'):
+            self.spatial_profile.update_scale_factor(scale_factor)
+            # Recreate the profile function with new scale factor
+            return self.spatial_profile.get_profile_function()
+        return None
 
     def run_for_duration(self, duration_seconds, warmup_seconds=0.0, post_process_interval=None):
         """Run simulation for a specific duration in seconds with an optional additional warmup period.
@@ -365,9 +431,13 @@ class AneurysmSimulation2D:
             step_times.append(step_time)
             total_sim_time += step_time
             
-            # Calculate running MLUPS
-            current_mlups = (total_nodes / step_time) / 1e6
-            mlups_history.append(current_mlups)
+            # Calculate running MLUPS (with safety check)
+            if step_time > 0:
+                current_mlups = (total_nodes / step_time) / 1e6
+                mlups_history.append(current_mlups)
+            else:
+                current_mlups = 0.0
+                print(f"Warning: Zero step time detected at warmup step {i}")
 
             if i % post_process_interval == 0:
                 # During warmup phase, we only print status, no post-processing
@@ -393,9 +463,13 @@ class AneurysmSimulation2D:
             step_times.append(step_time)
             total_sim_time += step_time
             
-            # Calculate running MLUPS
-            current_mlups = (total_nodes / step_time) / 1e6
-            mlups_history.append(current_mlups)
+            # Calculate running MLUPS (with safety check)
+            if step_time > 0:
+                current_mlups = (total_nodes / step_time) / 1e6
+                mlups_history.append(current_mlups)
+            else:
+                current_mlups = 0.0
+                print(f"Warning: Zero step time detected at main step {i}")
 
             if i % post_process_interval == 0:
                 # Calculate statistics
@@ -404,7 +478,7 @@ class AneurysmSimulation2D:
                 # Use recent steps for performance estimate
                 recent_steps = min(post_process_interval, len(step_times))
                 avg_step_time = sum(step_times[-recent_steps:]) / recent_steps
-                avg_mlups = (total_nodes / avg_step_time) / 1e6
+                recent_avg_mlups = (total_nodes / avg_step_time) / 1e6
                 remaining_steps = main_steps - i
                 estimated_seconds = remaining_steps * avg_step_time
                 
@@ -412,7 +486,7 @@ class AneurysmSimulation2D:
                 print(f"\nStep {i}/{main_steps} ({main_progress:.1f}%) - Analysis phase")
                 print(f"Simulation Statistics:")
                 print(f"├── Current MLUPS: {current_mlups:.2f}")
-                print(f"├── Average MLUPS: {avg_mlups:.2f}")
+                print(f"├── Recent Average MLUPS: {recent_avg_mlups:.2f}")
                 print(f"├── Step time: {step_time*1000:.2f}ms")
                 print(f"└── ETA: {str(timedelta(seconds=int(estimated_seconds)))}")
                 
@@ -426,7 +500,14 @@ class AneurysmSimulation2D:
     
         # Final statistics
         total_time = time.time() - start_time
-        avg_mlups = (total_nodes * (warmup_steps + main_steps) / total_sim_time) / 1e6
+        
+        # Calculate average MLUPS with safety check
+        if total_sim_time > 0:
+            avg_mlups = (total_nodes * (warmup_steps + main_steps) / total_sim_time) / 1e6
+        else:
+            avg_mlups = 0.0
+            print("Warning: Total simulation time is zero, cannot calculate average MLUPS")
+            
         avg_post_time = total_post_process_time / post_process_calls if post_process_calls > 0 else 0
         
         print("\n=== Simulation Summary ===")
@@ -440,8 +521,12 @@ class AneurysmSimulation2D:
         
         print(f"\nPerformance Metrics:")
         print(f"├── Average MLUPS: {avg_mlups:.2f}")
-        print(f"├── Best MLUPS: {max(mlups_history):.2f}")
-        print(f"├── Worst MLUPS: {min(mlups_history):.2f}")
+        if mlups_history:
+            print(f"├── Best MLUPS: {max(mlups_history):.2f}")
+            print(f"├── Worst MLUPS: {min(mlups_history):.2f}")
+        else:
+            print(f"├── Best MLUPS: N/A (no valid measurements)")
+            print(f"├── Worst MLUPS: N/A (no valid measurements)")
         print(f"├── Avg step time: {(total_sim_time/(warmup_steps + main_steps))*1000:.2f}ms")
         print(f"└── Avg post-process time: {avg_post_time:.3f}s")
 
@@ -455,8 +540,8 @@ class AneurysmSimulation2D:
                 "total_sim_time": total_sim_time,
                 "total_post_process_time": total_post_process_time,
                 "avg_mlups": avg_mlups,
-                "best_mlups": max(mlups_history),
-                "worst_mlups": min(mlups_history),
+                "best_mlups": max(mlups_history) if mlups_history else 0.0,
+                "worst_mlups": min(mlups_history) if mlups_history else 0.0,
                 "avg_step_time_ms": (total_sim_time/(warmup_steps + main_steps))*1000,
                 "avg_post_process_time": avg_post_time,
                 "total_steps": warmup_steps + main_steps,

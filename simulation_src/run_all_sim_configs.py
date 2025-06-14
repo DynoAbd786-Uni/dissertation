@@ -19,14 +19,25 @@ BASE_DIR = SCRIPT_DIR.parent  # Dissertation directory
 # Define combinations
 BOUNDARY_CONDITIONS = ["standard", "time-dependent"]
 COLLISION_OPERATORS = ["standard", "non-newtonian"]
+SPATIAL_PROFILES = ["uniform", "poiseuille", "blunted_paraboloid"]
 
-def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False, long_pipe=False):
+# Default spatial profile parameters
+SPATIAL_PROFILE_DEFAULTS = {
+    "uniform": {},  # No additional parameters needed for uniform profile
+    "poiseuille": {},
+    "blunted_paraboloid": {
+        "power_law_exponent": 1.7  # Default for blood flow
+    }
+}
+
+def run_pipe_simulation(boundary_condition, collision_operator, spatial_profile="poiseuille", dry_run=False, long_pipe=False):
     """
-    Run a pipe simulation with the specified boundary condition and collision operator.
+    Run a pipe simulation with the specified boundary condition, collision operator, and spatial profile.
     
     Args:
         boundary_condition (str): Boundary condition type, either "standard" or "time-dependent"
         collision_operator (str): Collision operator type, either "standard" or "non-newtonian"
+        spatial_profile (str): Spatial profile type, either "poiseuille" or "blunted_paraboloid"
         dry_run (bool): If True, print command but don't execute
         long_pipe (bool): If True, use longer pipe simulation settings
     
@@ -36,8 +47,14 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False, l
     # Get current timestamp for logs
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
-    # Create a descriptive name for this run
-    run_name = f"pipe_{boundary_condition}_{collision_operator}_{timestamp}"
+    # Create a descriptive name for this run including spatial profile
+    # Use short names for directory structure
+    bc_short = "tdzh" if boundary_condition == "time-dependent" else "zh"
+    co_short = "nnbgk" if collision_operator == "non-newtonian" else "bgk"
+    sp_short = "uniform" if spatial_profile == "uniform" else ("blunted" if spatial_profile == "blunted_paraboloid" else "poiseuille")
+    pipe_type = "long" if long_pipe else "standard"
+    
+    run_name = f"pipe_{bc_short}_{co_short}_{sp_short}_{pipe_type}_{timestamp}"
     
     # Prepare log directory
     log_dir = BASE_DIR / "results" / "logs"
@@ -49,8 +66,14 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False, l
         sys.executable,  # Use the current Python interpreter
         str(SCRIPT_DIR / "pipe_run.py"),
         f"--boundary-condition={boundary_condition}",
-        f"--collision-operator={collision_operator}"
+        f"--collision-operator={collision_operator}",
+        f"--spatial-profile={spatial_profile}"
     ]
+    
+    # Add spatial profile specific parameters
+    if spatial_profile in SPATIAL_PROFILE_DEFAULTS:
+        for param, value in SPATIAL_PROFILE_DEFAULTS[spatial_profile].items():
+            cmd.append(f"--{param.replace('_', '-')}={value}")
     
     # Add long pipe flag if requested
     if long_pipe:
@@ -64,6 +87,7 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False, l
     print(f"Running pipe simulation with:")
     print(f"  Boundary Condition: {boundary_condition}")
     print(f"  Collision Operator: {collision_operator}")
+    print(f"  Spatial Profile: {spatial_profile}")
     print(f"  Long Pipe: {'Enabled' if long_pipe else 'Disabled'}")
     print(f"  Log File: {log_file}")
     print(f"  Command: {' '.join(cmd)}")
@@ -123,12 +147,27 @@ def run_pipe_simulation(boundary_condition, collision_operator, dry_run=False, l
         print(f"Error running pipe simulation: {e}")
         return 1, "", str(e)
 
-def run_aneurysm_simulation(dry_run=False):
+def get_all_pipe_combinations():
     """
-    Run an aneurysm simulation.
+    Get all combinations of boundary conditions, collision operators, and spatial profiles.
+    
+    Returns:
+        list: List of tuples (boundary_condition, collision_operator, spatial_profile)
+    """
+    combinations = []
+    for bc in BOUNDARY_CONDITIONS:
+        for co in COLLISION_OPERATORS:
+            for sp in SPATIAL_PROFILES:
+                combinations.append((bc, co, sp))
+    return combinations
+
+def run_aneurysm_simulation(spatial_profile="blunted_paraboloid", dry_run=False):
+    """
+    Run an aneurysm simulation with specified spatial profile.
     Aneurysm simulations always use time-dependent boundary conditions and non-newtonian BGK.
     
     Args:
+        spatial_profile (str): Spatial profile type ("poiseuille" or "blunted_paraboloid")
         dry_run (bool): If True, print command but don't execute
     
     Returns:
@@ -137,8 +176,9 @@ def run_aneurysm_simulation(dry_run=False):
     # Get current timestamp for logs
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
-    # Create a descriptive name for this run
-    run_name = f"aneurysm_{timestamp}"
+    # Create a descriptive name for this run including spatial profile
+    sp_short = "uniform" if spatial_profile == "uniform" else ("blunted" if spatial_profile == "blunted_paraboloid" else "poiseuille")
+    run_name = f"aneurysm_tdzh_nnbgk_{sp_short}_{timestamp}"
     
     # Prepare log directory
     log_dir = BASE_DIR / "results" / "logs"
@@ -148,8 +188,14 @@ def run_aneurysm_simulation(dry_run=False):
     # Build the command
     cmd = [
         sys.executable,  # Use the current Python interpreter
-        str(SCRIPT_DIR / "aneurysm_run.py")
+        str(SCRIPT_DIR / "aneurysm_run.py"),
+        f"--spatial-profile={spatial_profile}"
     ]
+    
+    # Add spatial profile specific parameters
+    if spatial_profile in SPATIAL_PROFILE_DEFAULTS:
+        for param, value in SPATIAL_PROFILE_DEFAULTS[spatial_profile].items():
+            cmd.append(f"--{param.replace('_', '-')}={value}")
     
     # Add the generate-pngs flag only in production runs (not dry runs)
     if not dry_run:
@@ -157,6 +203,9 @@ def run_aneurysm_simulation(dry_run=False):
     
     print(f"\n{'='*80}")
     print(f"Running aneurysm simulation with:")
+    print(f"  Boundary Condition: time-dependent")
+    print(f"  Collision Operator: non-newtonian")
+    print(f"  Spatial Profile: {spatial_profile}")
     print(f"  Log File: {log_file}")
     print(f"  Command: {' '.join(cmd)}")
     
@@ -224,7 +273,19 @@ def main():
     parser.add_argument("--aneurysm-only", action="store_true", help="Run only the aneurysm simulations")
     parser.add_argument("--pipe-only", action="store_true", help="Run only the pipe simulations")
     parser.add_argument("--long-pipe", action="store_true", 
-                        help="Use long pipe simulation settings (dt=5e-5, resolution=0.08, vessel_length=800mm)")
+                        help="Run ONLY long pipe simulation settings (dt=4e-5, resolution=0.08, vessel_length=800mm). "
+                        "By default, BOTH standard and long pipe configurations are run.")
+    parser.add_argument("--standard-pipe-only", action="store_true",
+                        help="Run ONLY standard pipe simulation settings (dt=1e-5, resolution=0.02, vessel_length=15mm). "
+                        "By default, BOTH standard and long pipe configurations are run.")
+    parser.add_argument("--spatial-profile", choices=SPATIAL_PROFILES + ["all"], default="all",
+                        help="Spatial profile to use for simulations. 'all' runs all profiles (default: all)")
+    parser.add_argument("--boundary-condition", choices=BOUNDARY_CONDITIONS + ["all"], default="all",
+                        help="Boundary condition to use for pipe simulations. 'all' runs all conditions (default: all)")
+    parser.add_argument("--collision-operator", choices=COLLISION_OPERATORS + ["all"], default="all",
+                        help="Collision operator to use for pipe simulations. 'all' runs all operators (default: all)")
+    parser.add_argument("--aneurysm-spatial-profile", choices=SPATIAL_PROFILES + ["all"], default="blunted_paraboloid",
+                        help="Spatial profile to use for aneurysm simulations. 'blunted_paraboloid' is default for blood flow (default: blunted_paraboloid)")
     args = parser.parse_args()
     
     # Track successes and failures
@@ -235,20 +296,115 @@ def main():
     
     # Run pipe simulations if requested
     if not args.aneurysm_only:
-        # Run all pipe combinations
-        print(f"Running all {len(BOUNDARY_CONDITIONS) * len(COLLISION_OPERATORS)} pipe combinations")
+        # Check for conflicting flags
+        if args.long_pipe and args.standard_pipe_only:
+            print("ERROR: Cannot specify both --long-pipe and --standard-pipe-only flags.")
+            print("Use one or the other, or neither for both configurations.")
+            return
         
-        for bc in BOUNDARY_CONDITIONS:
-            for co in COLLISION_OPERATORS:
-                return_code, _, _ = run_pipe_simulation(bc, co, args.dry_run, args.long_pipe)
-                pipe_results.append((bc, co, return_code == 0))
+        # Modified logic: Run both standard AND long pipe configurations by default
+        if args.long_pipe:
+            # If --long-pipe is explicitly specified, only run long pipe configurations
+            long_pipe_combinations = [
+                ("standard", "non-newtonian", "uniform"),
+                ("standard", "non-newtonian", "poiseuille"), 
+                ("standard", "non-newtonian", "blunted_paraboloid")
+            ]
+            
+            print(f"Running {len(long_pipe_combinations)} long pipe combinations (--long-pipe specified):")
+            for bc, co, sp in long_pipe_combinations:
+                print(f"  - {bc} + {co} + {sp} (LONG PIPE)")
+            
+            # Execute the long pipe combinations
+            for bc, co, sp in long_pipe_combinations:
+                return_code, _, _ = run_pipe_simulation(bc, co, sp, args.dry_run, True)
+                pipe_results.append((bc, co, sp, return_code == 0))
+        elif args.standard_pipe_only:
+            # If --standard-pipe-only is specified, only run standard pipe configurations
+            if args.spatial_profile == "all" and args.boundary_condition == "all" and args.collision_operator == "all":
+                # Run all standard combinations
+                combinations = get_all_pipe_combinations()
+                print(f"Running all {len(combinations)} standard pipe combinations (--standard-pipe-only specified):")
+                for bc, co, sp in combinations:
+                    print(f"  - {bc} + {co} + {sp} (STANDARD)")
+            else:
+                # Run specific standard combinations based on arguments
+                boundary_conditions = BOUNDARY_CONDITIONS if args.boundary_condition == "all" else [args.boundary_condition]
+                collision_operators = COLLISION_OPERATORS if args.collision_operator == "all" else [args.collision_operator]
+                spatial_profiles = SPATIAL_PROFILES if args.spatial_profile == "all" else [args.spatial_profile]
+                
+                combinations = []
+                for bc in boundary_conditions:
+                    for co in collision_operators:
+                        for sp in spatial_profiles:
+                            combinations.append((bc, co, sp))
+                
+                print(f"Running {len(combinations)} specific standard pipe combinations (--standard-pipe-only specified):")
+                for bc, co, sp in combinations:
+                    print(f"  - {bc} + {co} + {sp} (STANDARD)")
+            
+            # Execute the standard combinations
+            for bc, co, sp in combinations:
+                return_code, _, _ = run_pipe_simulation(bc, co, sp, args.dry_run, False)
+                pipe_results.append((bc, co, sp, return_code == 0))
+        else:
+            # Default behavior: Run BOTH standard and long pipe configurations
+            print("Running comprehensive pipe simulation suite (both standard and long pipe configurations)")
+            
+            # First, run all standard pipe combinations
+            if args.spatial_profile == "all" and args.boundary_condition == "all" and args.collision_operator == "all":
+                # Run all standard combinations
+                combinations = get_all_pipe_combinations()
+                print(f"\n1. Running all {len(combinations)} standard pipe combinations:")
+                for bc, co, sp in combinations:
+                    print(f"  - {bc} + {co} + {sp} (STANDARD)")
+            else:
+                # Run specific standard combinations based on arguments
+                boundary_conditions = BOUNDARY_CONDITIONS if args.boundary_condition == "all" else [args.boundary_condition]
+                collision_operators = COLLISION_OPERATORS if args.collision_operator == "all" else [args.collision_operator]
+                spatial_profiles = SPATIAL_PROFILES if args.spatial_profile == "all" else [args.spatial_profile]
+                
+                combinations = []
+                for bc in boundary_conditions:
+                    for co in collision_operators:
+                        for sp in spatial_profiles:
+                            combinations.append((bc, co, sp))
+                
+                print(f"\n1. Running {len(combinations)} specific standard pipe combinations:")
+                for bc, co, sp in combinations:
+                    print(f"  - {bc} + {co} + {sp} (STANDARD)")
+            
+            # Execute the standard combinations
+            for bc, co, sp in combinations:
+                return_code, _, _ = run_pipe_simulation(bc, co, sp, args.dry_run, False)
+                pipe_results.append((bc, co, sp, return_code == 0))
+            
+            # Second, run long pipe combinations (standard ZH + non-newtonian BGK + all spatial profiles)
+            long_pipe_combinations = [
+                ("standard", "non-newtonian", "uniform"),
+                ("standard", "non-newtonian", "poiseuille"), 
+                ("standard", "non-newtonian", "blunted_paraboloid")
+            ]
+            
+            print(f"\n2. Running {len(long_pipe_combinations)} long pipe combinations:")
+            for bc, co, sp in long_pipe_combinations:
+                print(f"  - {bc} + {co} + {sp} (LONG PIPE)")
+            
+            # Execute the long pipe combinations
+            for bc, co, sp in long_pipe_combinations:
+                return_code, _, _ = run_pipe_simulation(bc, co, sp, args.dry_run, True)
+                pipe_results.append((bc, co, sp, return_code == 0))
     
     # Run aneurysm simulations if requested
     if not args.pipe_only:
-        print("Running aneurysm simulation")
-        # Aneurysm with NNBGK and TDZH (defaults)
-        return_code, _, _ = run_aneurysm_simulation(args.dry_run)
-        aneurysm_results.append(("nnbgk_tdzh", return_code == 0))
+        # Determine which aneurysm spatial profiles to run
+        aneurysm_spatial_profiles = SPATIAL_PROFILES if args.aneurysm_spatial_profile == "all" else [args.aneurysm_spatial_profile]
+        
+        print(f"Running aneurysm simulations with {len(aneurysm_spatial_profiles)} spatial profile(s)")
+        for aneurysm_sp in aneurysm_spatial_profiles:
+            print(f"  - Aneurysm: time-dependent + non-newtonian + {aneurysm_sp}")
+            return_code, _, _ = run_aneurysm_simulation(aneurysm_sp, args.dry_run)
+            aneurysm_results.append((f"nnbgk_tdzh_{aneurysm_sp}", return_code == 0))
     
     end_time_all = time.time()
     total_time = end_time_all - start_time_all
@@ -264,13 +420,13 @@ def main():
         print("\nPipe Simulations:")
         print(f"Combinations run: {len(pipe_results)}")
         
-        pipe_successes = sum(1 for _, _, success in pipe_results if success)
+        pipe_successes = sum(1 for _, _, _, success in pipe_results if success)
         print(f"Successful: {pipe_successes}/{len(pipe_results)}")
         
         print("\nResults by combination:")
-        for bc, co, success in pipe_results:
+        for bc, co, sp, success in pipe_results:
             status = "SUCCESS" if success else "FAILED"
-            print(f"  Pipe: {bc:<15} + {co:<15} = {status}")
+            print(f"  Pipe: {bc:<15} + {co:<15} + {sp:<20} = {status}")
     
     # Aneurysm results
     if aneurysm_results:
@@ -281,9 +437,9 @@ def main():
         print(f"Successful: {aneurysm_successes}/{len(aneurysm_results)}")
         
         print("\nResults by combination:")
-        for co, success in aneurysm_results:
+        for config, success in aneurysm_results:
             status = "SUCCESS" if success else "FAILED"
-            print(f"  Aneurysm: time-dependent + {co:<15} = {status}")
+            print(f"  Aneurysm: {config:<35} = {status}")
 
 if __name__ == "__main__":
     main()

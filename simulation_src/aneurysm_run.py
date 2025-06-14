@@ -24,7 +24,9 @@ def aneurysm_simulation_setup(
     flow_profile=None,
     output_path=None,
     save_wss_png=True,  # Flag to control WSS and wall mask PNG generation
-    zero_velocity_in_walls=True  # New flag to zero out velocity in wall cells
+    zero_velocity_in_walls=True,  # Flag to zero out velocity in wall cells
+    spatial_profile_type="poiseuille",  # Add spatial profile type parameter
+    spatial_profile_params=None  # Add spatial profile parameters
 ) -> AneurysmSimulation2D:
     """Setup aneurysm simulation with configurable parameters"""
     
@@ -109,7 +111,12 @@ def aneurysm_simulation_setup(
         "bulge_centre_y_lu": vessel_centre_lu + (grid_y // 2),
         "flow_profile": flow_profile,
         "save_wss_png": save_wss_png,  # Add the flag to input parameters
-        "zero_velocity_in_walls": zero_velocity_in_walls  # Add the flag to input parameters
+        "zero_velocity_in_walls": zero_velocity_in_walls,  # Add the flag to input parameters
+        # Add spatial profile configuration
+        "spatial_profile": {
+            "type": spatial_profile_type,
+            **(spatial_profile_params or {})
+        }
     }
     
     # Create simulation
@@ -164,6 +171,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Aneurysm flow simulation with Non-Newtonian BGK and Time-Dependent Zou-He')
     parser.add_argument('--generate-pngs', action='store_true',
                         help='Generate PNG images during simulation (if not specified, only VTK files will be saved)')
+    parser.add_argument('--spatial-profile', choices=['uniform', 'poiseuille', 'blunted_paraboloid'], default='blunted_paraboloid',
+                        help='Spatial velocity profile type: uniform (flat/constant), poiseuille (parabolic) or blunted_paraboloid (power-law for blood flow, default)')
+    parser.add_argument('--power-law-exponent', type=float, default=1.7,
+                        help='Power-law exponent n for blunted paraboloid profile (default: 1.7, typical for blood flow)')
     args = parser.parse_args()
     
     # Set simulation parameters
@@ -171,7 +182,7 @@ if __name__ == "__main__":
     resolution_mm = 0.02  # Resolution in mm
     resolution_m = resolution_mm * 0.001  # Convert to meters
     vessel_diameter_mm = 6.5  # Male Common Carotid Artery size.
-    vessel_length_mm = 15  # Vessel length in mm
+    vessel_length_mm = 35  # Vessel length in mm
     
     # Load CSV files - now with dx and dt parameters for lattice unit conversion
     flow_profile_data = load_csv_data(
@@ -237,15 +248,36 @@ if __name__ == "__main__":
     import warp as wp
     wp.clear_kernel_cache()     # Clear kernel cache to avoid conflicts with new kernel code
 
-    # Create output directory with specific name
+    # Configure spatial profile parameters
+    spatial_profile_params = {}
+    if args.spatial_profile == 'blunted_paraboloid':
+        spatial_profile_params['n'] = args.power_law_exponent
+        spatial_profile_params['scale_factor'] = 1.0  # Can be modified for time-varying profiles
+    elif args.spatial_profile == 'uniform':
+        # No additional parameters needed for uniform profile
+        pass
+
+    # Create output directory with spatial profile included in name
+    sp_name = "uniform" if args.spatial_profile == "uniform" else ("blunted" if args.spatial_profile == "blunted_paraboloid" else "poiseuille")
     base_dir = os.getcwd()
-    output_path = os.path.join(base_dir, "../results/aneurysm_flow/CCA_simulation_results_nnbgk_tdzh")
+    output_path = os.path.join(base_dir, f"../results/aneurysm_flow/CCA_simulation_results_nnbgk_tdzh_{sp_name}")
     # Create parent directory if it doesn't exist
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     print(f"Output will be saved to: {output_path}")
 
     # Delete the output directory if it exists
     delete_directory_if_exists(output_path)
+
+    print("\n===========================================")
+    print("ANEURYSM SIMULATION CONFIGURATION")
+    print("===========================================")
+    print(f"Boundary condition: Time-dependent Zou-He (TDZH)")
+    print(f"Collision operator: Non-Newtonian BGK (NNBGK)")
+    print(f"Spatial profile: {args.spatial_profile}")
+    if args.spatial_profile == 'blunted_paraboloid':
+        print(f"Power-law exponent (n): {args.power_law_exponent}")
+    print(f"Flow profile: {flow_profile['name']}")
+    print("===========================================\n")
 
     # Create simulation with realistic vessel parameters
     simulation = aneurysm_simulation_setup(
@@ -260,7 +292,9 @@ if __name__ == "__main__":
         fps=100,                     # Output frames per second
         flow_profile=flow_profile,   # Pass selected flow profile with name
         output_path=output_path,     # Pass the output path
-        save_wss_png=args.generate_pngs  # Pass the generate-pngs flag as save_wss_png
+        save_wss_png=args.generate_pngs,  # Pass the generate-pngs flag as save_wss_png
+        spatial_profile_type=args.spatial_profile,  # Pass spatial profile type
+        spatial_profile_params=spatial_profile_params  # Pass spatial profile parameters
     )
 
     # Run simulation for 1 second with warmup

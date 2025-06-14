@@ -62,7 +62,7 @@ def pipe_simulation_setup(
     max_velocity=0.2,  # m/s
     flow_profile_type="sinusoidal",
     dt=1e-5,  # seconds
-    backend=ComputeBackend.JAX,
+    backend=ComputeBackend.WARP,
     precision_policy=PrecisionPolicy.FP32FP32,
     use_time_dependent_zou_he=False,
     use_non_newtonian_bgk=False,
@@ -70,7 +70,9 @@ def pipe_simulation_setup(
     flow_profile=None,  # Add flow_profile parameter with default None
     check_stability=True,  # Add stability check parameter
     output_path=None,  # Add parameter for output path
-    save_png=False  # Add parameter for PNG generation flag
+    save_png=False,  # Add parameter for PNG generation flag
+    spatial_profile_type="poiseuille",  # Add spatial profile type parameter
+    spatial_profile_params=None  # Add spatial profile parameters
 ) -> PipeSimulation2D:
     """Setup pipe simulation with configurable parameters"""
 
@@ -109,7 +111,12 @@ def pipe_simulation_setup(
         "fps": fps,
         "max_velocity": max_velocity,         # Physical velocity (m/s)
         "max_velocity_lu": max_velocity_lu,   # Lattice velocity (LU/step)
-        "flow_profile": flow_profile or {"name": flow_profile_type}
+        "flow_profile": flow_profile or {"name": flow_profile_type},
+        # Add spatial profile configuration
+        "spatial_profile": {
+            "type": spatial_profile_type,
+            **(spatial_profile_params or {})
+        }
     }
 
     # Preload selected CSV data for flow profile if warp selected
@@ -180,6 +187,10 @@ if __name__ == "__main__":
                         help='Boundary condition type: standard (Standard Zou-He) or time-dependent (Time-dependent Zou-He)')
     parser.add_argument('--collision-operator', choices=['standard', 'non-newtonian'], required=True,
                         help='Collision operator type: standard (Standard BGK) or non-newtonian (Non-Newtonian BGK)')
+    parser.add_argument('--spatial-profile', choices=['uniform', 'poiseuille', 'blunted_paraboloid'], default='poiseuille',
+                        help='Spatial velocity profile type: uniform (flat/constant), poiseuille (parabolic) or blunted_paraboloid (power-law for blood flow)')
+    parser.add_argument('--power-law-exponent', type=float, default=1.7,
+                        help='Power-law exponent n for blunted paraboloid profile (default: 1.7, typical for blood flow)')
     parser.add_argument('--long-pipe', action='store_true',
                         help='Use longer pipe simulation settings with dt=5e-5, resolution=0.08, vessel_length=800mm')
     parser.add_argument('--generate-pngs', action='store_true',
@@ -269,13 +280,15 @@ if __name__ == "__main__":
     # Default to standard BGK 
     use_non_newtonian_bgk = args.collision_operator == 'non-newtonian'
     
-    # Create output directory based on BC and CO settings
-    bc_name = "time_dependent_zouhe" if use_time_dependent_zou_he else "standard_zouhe"
-    co_name = "non_newtonian_bgk" if use_non_newtonian_bgk else "standard_bgk"
+    # Create output directory based on BC, CO, and spatial profile settings
+    bc_name = "tdzh" if use_time_dependent_zou_he else "zh"
+    co_name = "nnbgk" if use_non_newtonian_bgk else "bgk"
+    sp_name = "uniform" if args.spatial_profile == "uniform" else ("blunted" if args.spatial_profile == "blunted_paraboloid" else "poiseuille")
+    pipe_type = "long" if args.long_pipe else "standard"
     
     # Construct output path from current working directory
     base_dir = os.getcwd()
-    output_dir_name = f"{bc_name}_{co_name}"
+    output_dir_name = f"{bc_name}_{co_name}_{sp_name}_{pipe_type}"
     output_path = os.path.join(base_dir, "../results/pipe_flow", output_dir_name)
     
     # Ensure directory exists
@@ -285,6 +298,15 @@ if __name__ == "__main__":
     
     # Delete the output directory if it exists
     delete_directory_if_exists(output_path)
+    
+    # Configure spatial profile parameters
+    spatial_profile_params = {}
+    if args.spatial_profile == 'blunted_paraboloid':
+        spatial_profile_params['n'] = args.power_law_exponent
+        spatial_profile_params['scale_factor'] = 1.0  # Can be modified for time-varying profiles
+    elif args.spatial_profile == 'uniform':
+        # No additional parameters needed for uniform profile
+        pass
     
     # Create simulation with realistic vessel parameters
     simulation = pipe_simulation_setup(
@@ -299,7 +321,9 @@ if __name__ == "__main__":
         use_time_dependent_zou_he=use_time_dependent_zou_he,  # Boundary condition type
         use_non_newtonian_bgk=use_non_newtonian_bgk,  # Collision operator type
         output_path=output_path,  # Pass the output path
-        save_png=args.generate_pngs  # Pass the PNG generation flag
+        save_png=args.generate_pngs,  # Pass the PNG generation flag
+        spatial_profile_type=args.spatial_profile,  # Pass spatial profile type
+        spatial_profile_params=spatial_profile_params  # Pass spatial profile parameters
     )
     
 
@@ -323,6 +347,9 @@ if __name__ == "__main__":
     print(f"Reynolds number: {reynolds_number:.2f}")
     print(f"Boundary condition: {'Time-dependent Zou-He' if use_time_dependent_zou_he else 'Standard Zou-He'}")
     print(f"Collision operator: {'Non-Newtonian BGK' if use_non_newtonian_bgk else 'Standard BGK'}")
+    print(f"Spatial profile: {args.spatial_profile}")
+    if args.spatial_profile == 'blunted_paraboloid':
+        print(f"Power-law exponent (n): {args.power_law_exponent}")
     print(f"Flow profile: {flow_profile['name']}")
     print(f"Maximum velocity: {simulation.input_params['max_velocity']} m/s ({simulation.input_params['max_velocity_lu']:.6f} LU/step)")
     print("===========================================\n")

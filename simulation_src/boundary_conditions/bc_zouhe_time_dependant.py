@@ -92,7 +92,7 @@ class TimeDependentZouHeBC(BoundaryCondition):
 
         # --- After super().__init__ ---
         # Set needs_aux flags like ZouHeBC
-        self.needs_aux_init = True
+        self.needs_aux_init = True if self.profile else False
         self.needs_aux_recovery = True
         self.num_of_aux_data = 1  # One aux data for velocity
         self.needs_padding = True
@@ -136,6 +136,12 @@ class TimeDependentZouHeBC(BoundaryCondition):
 
         # Using formulas or extrapolation
         _use_csv_profile = wp.static(wp.int32(int(self.use_csv_profile)))
+        
+        # Pre-calculate whether we have a spatial profile for static compilation
+        _has_spatial_profile = wp.static(wp.int32(1 if self.profile is not None else 0))
+        
+        # Pre-calculate spatial profile availability as static boolean
+        _has_spatial_profile = wp.static(wp.int32(int(self.profile is not None)))
 
         
         # Helper functions copied from ZouHe
@@ -314,7 +320,7 @@ class TimeDependentZouHeBC(BoundaryCondition):
                 temporal_velocity = sinusoidal_flow(t)
             
             # Apply spatial profile if available
-            if wp.static(self.profile is not None):
+            if _has_spatial_profile == 1:
                 # Get spatial factor (normalized)
                 spatial_factor = wp.float32(1.0)
                 for l in range(_q):
