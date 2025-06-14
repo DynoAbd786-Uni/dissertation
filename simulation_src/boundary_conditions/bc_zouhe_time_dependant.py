@@ -309,24 +309,24 @@ class TimeDependentZouHeBC(BoundaryCondition):
             
             if _use_csv_profile == 1:
                 normalized_time = fmod(t, wp.float32(1.0))
-                prescribed_velocity = interpolate_flow_profile(normalized_time)
+                temporal_velocity = interpolate_flow_profile(normalized_time)
             else:
-                prescribed_velocity = sinusoidal_flow(t)
+                temporal_velocity = sinusoidal_flow(t)
             
-            # Only apply spatial profile scaling if we have a spatial profile
+            # Apply spatial profile if available
             if wp.static(self.profile is not None):
-                # Retrieve stored spatial profile from aux data
-                spatial_factor = wp.float32(1.0)  # Default uniform
-                
+                # Get spatial factor (normalized)
+                spatial_factor = wp.float32(1.0)
                 for l in range(_q):
                     if _missing_mask[l] == wp.uint8(1):
-                        # Get stored spatial profile value and normalize it
-                        stored_spatial_value = f_post[_opp_indices[l], index[0], index[1], index[2]]
-                        spatial_factor = stored_spatial_value / _u_max  # Normalize to factor
+                        stored_spatial_velocity = f_post[_opp_indices[l], index[0], index[1], index[2]]
+                        spatial_factor = stored_spatial_velocity / _u_max  # Normalize to 0-1
                         break
                 
-                # Apply spatial scaling to temporal profile
-                prescribed_velocity = prescribed_velocity * spatial_factor
+                # Scale temporal velocity by spatial factor
+                prescribed_velocity = temporal_velocity * spatial_factor
+            else:
+                prescribed_velocity = temporal_velocity
             
             # Create velocity vector
             _u = prescribed_velocity * normals
@@ -377,22 +377,6 @@ class TimeDependentZouHeBC(BoundaryCondition):
             dim=f_pre.shape[1:],
         )
         return f_post
-    
-    def aux_data_init(self, f_0, f_1, bc_mask, missing_mask):
-        """Initialize with spatial profile if provided"""
-        if self.profile is not None and self.compute_backend == ComputeBackend.WARP:
-            # Use parent's aux data initialization to store spatial profile
-            wp.launch(
-                self._construct_aux_data_init_kernel(self.profile),
-                inputs=[f_0, f_1, bc_mask, missing_mask],
-                dim=f_0.shape[1:],
-            )
-        elif self.profile is not None and self.compute_backend == ComputeBackend.JAX:
-            self.prescribed_values = self.profile()
-        
-        self.is_initialized_with_aux_data = True
-        return f_0, f_1
-    
 
     @partial(jit, static_argnums=(0,), inline=True)
     def _get_known_middle_mask(self, missing_mask):
@@ -547,18 +531,26 @@ class TimeDependentZouHeBC(BoundaryCondition):
     @Operator.register_backend(ComputeBackend.JAX)
     @partial(jit, static_argnums=(0))
     def jax_implementation(self, f_pre, f_post, bc_mask, missing_mask, timestep=None):
-        # Default timestep if not provided
         if timestep is None:
             timestep = 0
         
-        # Update prescribed_values for this timestep
-        velocity = self._get_velocity_jax(timestep)
+        # Get temporal velocity
+        temporal_velocity = self._get_velocity_jax(timestep)
         
-        # Convert scalar velocity to vector using normals
-        normals = self._get_normal_vec(missing_mask)
-        self.prescribed_values = velocity * normals
-        
-        # Rest of implementation remains the same
+        # Check if we have spatial profile (initialized by parent aux_data_init)
+        if hasattr(self, 'prescribed_values') and self.prescribed_values is not None:
+            # prescribed_values contains the spatial profile from parent aux_data_init
+            spatial_profile = self.prescribed_values  # Shape: (2, ny) from bc_profile_jax()
+            temporal_scaling = temporal_velocity / self.u_max
+            
+            # Scale spatial profile by temporal factor
+            self.prescribed_values = spatial_profile * temporal_scaling
+        else:
+            # Uniform velocity (no spatial profile)
+            normals = self._get_normal_vec(missing_mask)
+            self.prescribed_values = temporal_velocity * normals
+
+        # Apply boundary condition (standard ZouHe logic)
         boundary = bc_mask == self.id
         new_shape = (self.velocity_set.q,) + boundary.shape[1:]
         boundary = lax.broadcast_in_dim(boundary, new_shape, tuple(range(self.velocity_set.d + 1)))

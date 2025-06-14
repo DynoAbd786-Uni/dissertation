@@ -62,7 +62,7 @@ def pipe_simulation_setup(
     max_velocity=0.2,  # m/s
     flow_profile_type="sinusoidal",
     dt=1e-5,  # seconds
-    backend=ComputeBackend.WARP,
+    backend=ComputeBackend.JAX,
     precision_policy=PrecisionPolicy.FP32FP32,
     use_time_dependent_zou_he=False,
     use_non_newtonian_bgk=False,
