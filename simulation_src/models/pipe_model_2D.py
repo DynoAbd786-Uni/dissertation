@@ -180,7 +180,11 @@ class PipeSimulation2D:
         Returns:
             SpatialFlowProfile or None: Instance of the selected profile class, or None for uniform profile
         """
-        from profiles.spacial_flow_profiles import PoiseuilleProfile, BluntedParaboloidProfile
+        from profiles.spatial_flow_profiles import PoiseuilleProfile, BluntedParaboloidProfile
+        
+        # Get vessel parameters for profile calculation
+        vessel_diameter = self.input_params["vessel_diameter_lu"]  # Diameter of vessel in lattice units
+        vessel_centre = self.input_params.get("vessel_centre_lu", vessel_diameter)  # Centre of vessel
         
         # Get profile configuration from input parameters
         profile_config = self.input_params.get("spatial_profile", {"type": "poiseuille"})
@@ -191,6 +195,8 @@ class PipeSimulation2D:
             return None
         elif profile_type == "poiseuille":
             return PoiseuilleProfile(
+                vessel_diameter=vessel_diameter,
+                vessel_centre=vessel_centre,
                 grid_shape=self.grid_shape,
                 backend=self.backend,
                 precision_policy=self.precision_policy,
@@ -202,6 +208,8 @@ class PipeSimulation2D:
             scale_factor = profile_config.get("scale_factor", 1.0)
             
             return BluntedParaboloidProfile(
+                vessel_diameter=vessel_diameter,
+                vessel_centre=vessel_centre,
                 grid_shape=self.grid_shape,
                 backend=self.backend,
                 precision_policy=self.precision_policy,
@@ -212,6 +220,8 @@ class PipeSimulation2D:
         else:
             print(f"Warning: Unknown spatial profile type '{profile_type}', defaulting to Poiseuille")
             return PoiseuilleProfile(
+                vessel_diameter=vessel_diameter,
+                vessel_centre=vessel_centre,
                 grid_shape=self.grid_shape,
                 backend=self.backend,
                 precision_policy=self.precision_policy,

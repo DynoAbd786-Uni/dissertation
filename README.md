@@ -8,12 +8,14 @@ This repository contains a comprehensive solution for simulating and visualizing
 ## 🚀 Key Features
 
 - **High-Performance Computing**: GPU-accelerated simulations achieving 8,000-16,000 MLUPS (Million Lattice Updates Per Second)
+- **Advanced Performance Testing**: Dedicated MLUPS benchmarking tools with JAX vs WARP backend comparison
 - **Advanced Blood Flow Modeling**: Non-Newtonian Carreau-Yasuda rheology model for realistic blood viscosity
 - **Comprehensive Spatial Profiles**: Support for uniform, Poiseuille, and blunted paraboloid velocity profiles optimized for blood flow
 - **Pulsatile Flow Support**: Time-dependent boundary conditions with realistic cardiac cycle profiles
 - **Multi-Domain Analysis**: Both standard (751×330) and long pipe (10,001×86) configurations for performance scaling analysis
 - **Intelligent Batch Processing**: Automated execution of 18 total configurations (15 pipe + 3 aneurysm) with organized results management
 - **Performance Scaling**: Domain-size dependent MLUPS optimization (3,000-16,000 MLUPS range)
+- **Scientific Performance Testing**: Process-isolated backend testing with thermal management and pure simulation measurement
 - **Professional Visualization**: VTK output for ParaView analysis and interactive Jupyter notebooks
 - **Robust Error Handling**: Comprehensive safety checks, validation, and user-friendly error messages
 
@@ -28,6 +30,7 @@ This repository contains a comprehensive solution for simulating and visualizing
   - [Batch Execution](#batch-execution)
 - [Results and Visualization](#results-and-visualization)
 - [Performance Guide](#performance-guide)
+- [Advanced Performance Testing](#advanced-performance-testing)
 - [Troubleshooting](#troubleshooting)
 - [Technical Documentation](#technical-documentation)
 
@@ -253,6 +256,110 @@ python simulation_src/pipe_run.py --long-pipe
 python simulation_src/run_all_sim_configs.py --pipe-only
 ```
 
+## Advanced Performance Testing
+
+### 🚀 **Dedicated Performance Testing Framework**
+
+New dedicated performance testing tools for precise MLUPS benchmarking and backend comparison:
+
+#### **Individual Backend Performance Testing**
+```bash
+# Test JAX backend (CPU) performance
+python simulation_src/performance_testing_aneurysm_model.py --backend JAX --duration-seconds 2.0 --warmup-seconds 2.0
+
+# Test WARP backend (GPU) performance  
+python simulation_src/performance_testing_aneurysm_model.py --backend WARP --duration-seconds 2.0 --warmup-seconds 2.0
+```
+
+#### **Comprehensive Backend Comparison**
+```bash
+# Run both JAX and WARP tests with proper isolation
+python simulation_src/run_all_performance_tests.py
+
+# Quick comparison test
+python simulation_src/run_all_performance_tests.py --duration-seconds 1.0 --warmup-seconds 1.0
+
+# Detailed comparison with longer duration
+python simulation_src/run_all_performance_tests.py --duration-seconds 5.0 --warmup-seconds 5.0
+
+# Test single backend only
+python simulation_src/run_all_performance_tests.py --jax-only
+python simulation_src/run_all_performance_tests.py --warp-only
+
+# Skip thermal cooldown for faster testing (less accurate)
+python simulation_src/run_all_performance_tests.py --skip-cooldown
+
+# Verbose output with detailed backend information
+python simulation_src/run_all_performance_tests.py --verbose
+```
+
+### 🔬 **Performance Testing Features**
+
+#### **Scientific Accuracy**:
+- **Process Isolation**: Each backend runs in separate subprocess to prevent memory contamination
+- **Thermal Management**: GPU cooldown periods between tests to prevent thermal throttling
+- **Pure Simulation**: Disables all post-processing and file I/O during measurement
+- **MLUPS Calculation**: Measured after warmup completion for stable performance metrics
+
+#### **Comprehensive Results**:
+- **Side-by-side Comparison**: Direct JAX vs WARP performance analysis
+- **Detailed Metrics**: Average, peak, minimum MLUPS with statistical analysis
+- **Thermal Monitoring**: GPU temperature tracking (when available)
+- **JSON Export**: Complete performance data saved for analysis
+
+#### **Expected Performance Results**:
+```
+Backend    Status     Avg MLUPS    Peak MLUPS   Grid Size    Device         
+--------------------------------------------------------------------------
+JAX        ✅ OK       210.2        1620.5       1751x530     CPU            
+WARP       ✅ OK       2134.7       14688.5      1751x530     GPU            
+
+🚀 GPU Performance Advantage:
+   WARP (GPU) is 10.2x faster than JAX (CPU)
+   Performance gain: 920%
+   Wall-clock speedup: 10.3x (43s vs 7m21s)
+```
+
+**Note**: The above performance results were obtained from individual test executions using:
+```bash
+python simulation_src/performance_testing_aneurysm_model.py --backend JAX --duration-seconds 0.5
+python simulation_src/performance_testing_aneurysm_model.py --backend WARP --duration-seconds 0.5
+```
+
+*The comprehensive testing script (`run_all_performance_tests.py`) may introduce slight overhead due to subprocess isolation and thermal management. For most accurate MLUPS measurements, use the individual testing script directly.*
+
+### 📊 **Performance Testing Output Structure**
+```
+results/performance_tests/
+├── aneurysm_performance_jax/
+│   └── parameters/
+│       └── performance_test_results_jax.json
+├── aneurysm_performance_warp/
+│   └── parameters/
+│       └── performance_test_results_warp.json
+└── comprehensive_performance_comparison.json
+```
+
+### 🎯 **Performance Testing Use Cases**
+
+#### **System Benchmarking**:
+```bash
+# Validate your system's LBM performance
+python simulation_src/run_all_performance_tests.py --duration-seconds 3.0
+```
+
+#### **Hardware Optimization**:
+```bash
+# Compare CPU vs GPU efficiency
+python simulation_src/run_all_performance_tests.py --verbose
+```
+
+#### **Development Testing**:
+```bash
+# Quick performance validation during development
+python simulation_src/run_all_performance_tests.py --duration-seconds 0.5 --skip-cooldown
+```
+
 ### Expected Complete Batch Performance
 - **Total Time**: ~60-70 minutes (18 configurations)
 - **Standard Pipes**: ~36 minutes (12 × 3 min)
@@ -331,15 +438,20 @@ python simulation_src/pipe_run.py \
 ### 📁 **Key Files**
 - `simulation_src/run_all_sim_configs.py`: Main batch execution
 - `simulation_src/examples/run_all_sim_configs_usage.py`: Comprehensive usage guide
+- `simulation_src/performance_testing_aneurysm_model.py`: Dedicated performance testing framework
+- `simulation_src/run_all_performance_tests.py`: Comprehensive backend comparison tool
 - `visualisation_src/vtk_visualization.ipynb`: Interactive analysis
+- `simulation_src/WSS_Fluctuation_Analysis_and_Profile_Trade-offs.txt`: WSS artifact analysis and recommendations
 - `SPATIAL_PROFILES_SUMMARY.md`: Detailed spatial profiles documentation
 - `MLUPS_FIXES_SUMMARY.md`: Performance optimization guide
 
 ### 🎯 **Recent Improvements**
+- **Dedicated Performance Testing**: Complete MLUPS benchmarking framework with JAX vs WARP comparison
+- **WSS Artifact Analysis**: Comprehensive investigation and documentation of wall shear stress fluctuations
 - **Default Multi-Configuration**: Runs 18 configurations by default
 - **Intelligent Naming**: Pipe type distinction prevents result overwrites  
 - **Performance Scaling**: Domain-size dependent MLUPS optimization (2-3× improvement)
-- **Enhanced Spatial Profiles**: Uniform, Poiseuille, and Blunted Paraboloid implementations
+- **Enhanced Spatial Profiles**: Uniform, Poiseuille, and Blunted Paraboloid implementations with restored u_max scaling
 - **Professional Output**: Complete VTK integration with JSON parameter files
 
 ---

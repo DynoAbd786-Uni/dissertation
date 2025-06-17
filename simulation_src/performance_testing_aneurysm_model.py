@@ -9,6 +9,8 @@ from utils.constants import load_profile_values
 import numpy as np
 import os
 import argparse
+import json
+from datetime import datetime
 
 
 def aneurysm_simulation_setup(
@@ -26,7 +28,9 @@ def aneurysm_simulation_setup(
     save_wss_png=True,  # Flag to control WSS and wall mask PNG generation
     zero_velocity_in_walls=True,  # Flag to zero out velocity in wall cells
     spatial_profile_type="blunted",  # Add spatial profile type parameter
-    spatial_profile_params=None  # Add spatial profile parameters
+    spatial_profile_params=None,  # Add spatial profile parameters
+    performance_testing=False,  # Add performance testing flag
+    backend=None  # Add backend parameter
 ) -> AneurysmSimulation2D:
     """Setup aneurysm simulation with configurable parameters"""
     
@@ -50,8 +54,9 @@ def aneurysm_simulation_setup(
     # Calculate vessel centerline
     vessel_centre_lu = grid_y // 2
     
-    # Simulation parameters
-    backend = ComputeBackend.WARP
+    # Simulation parameters - use passed backend or default to WARP
+    if backend is None:
+        backend = ComputeBackend.WARP
 
     # Preload selected CSV data for flow profile if warp selected
     if backend == ComputeBackend.WARP and flow_profile is not None and flow_profile.get('data') is not None:
@@ -128,7 +133,8 @@ def aneurysm_simulation_setup(
         precision_policy=precision_policy,
         resolution=resolution_mm,
         input_params=input_params,
-        output_path=output_path
+        output_path=output_path,
+        performance_testing=performance_testing
     )
     
     return simulation
@@ -167,24 +173,47 @@ if __name__ == "__main__":
         '--xla_gpu_enable_latency_hiding_scheduler=true '
     )
 
-    # Add command line argument parsing
-    parser = argparse.ArgumentParser(description='Aneurysm flow simulation with Non-Newtonian BGK and Time-Dependent Zou-He')
-    parser.add_argument('--generate-pngs', action='store_true',
-                        help='Generate PNG images during simulation (if not specified, only VTK files will be saved)')
-    parser.add_argument('--spatial-profile', choices=['uniform', 'poiseuille', 'blunted_paraboloid'], default='blunted_paraboloid',
-                        help='Spatial velocity profile type: uniform (flat/constant), poiseuille (parabolic) or blunted_paraboloid (power-law for blood flow, default)')
-    parser.add_argument('--power-law-exponent', type=float, default=1.7,
-                        help='Power-law exponent n for blunted paraboloid profile (default: 1.7, typical for blood flow)')
+    # Add command line argument parsing for performance testing
+    parser = argparse.ArgumentParser(description='Aneurysm Performance Testing - Using Exact Parameters from aneurysm_run.py')
+    parser.add_argument('--backend', choices=['JAX', 'WARP'], default='JAX',
+                        help='Compute backend to test (default: JAX)')
+    parser.add_argument('--duration-seconds', type=float, default=1.0,
+                        help='Simulation duration for analysis (default: 1.0 seconds)')
+    parser.add_argument('--warmup-seconds', type=float, default=2.0,
+                        help='Warmup duration before MLUPS measurement (default: 2.0 seconds)')
     args = parser.parse_args()
     
-    # Set simulation parameters
+    # Set backend
+    if args.backend == 'JAX':
+        backend = xlb.ComputeBackend.JAX
+    else:
+        backend = xlb.ComputeBackend.WARP
+    
+    # Clear kernel cache for clean testing
+    if args.backend == 'WARP':
+        import warp as wp
+        wp.clear_kernel_cache()
+    
+    # EXACT PARAMETERS FROM aneurysm_run.py
     dt = 1e-5  # Time step size (seconds)
     resolution_mm = 0.02  # Resolution in mm
     resolution_m = resolution_mm * 0.001  # Convert to meters
-    vessel_diameter_mm = 6.5  # Male Common Carotid Artery size.
+    vessel_diameter_mm = 6.5  # Male Common Carotid Artery size
     vessel_length_mm = 35  # Vessel length in mm
     
-    # Load CSV files - now with dx and dt parameters for lattice unit conversion
+    print("\n" + "="*60)
+    print("ANEURYSM LBM PERFORMANCE TESTING")
+    print("Using EXACT parameters from aneurysm_run.py")
+    print("="*60)
+    print(f"Backend: {args.backend}")
+    print(f"Duration: {args.duration_seconds}s analysis + {args.warmup_seconds}s warmup")
+    print(f"Vessel: {vessel_length_mm}mm x {vessel_diameter_mm}mm")
+    print(f"Resolution: {resolution_mm}mm")
+    print(f"Time step: {dt}")
+    print(f"Spatial profile: blunted_paraboloid (n=1.7)")
+    print("="*60)
+
+    # Load CSV files - same as aneurysm_run.py
     flow_profile_data = load_csv_data(
         vessel_radius_mm=vessel_diameter_mm/2,  # Convert diameter to radius
         dx=resolution_m,                        # Pass grid spacing
@@ -193,12 +222,7 @@ if __name__ == "__main__":
         normalize_time=True                     # Normalize time to 1 second
     )
 
-    # Auto-select CCA profile without prompting the user
-    print("Available flow profiles:")
-    for i, file_name in enumerate(flow_profile_data.keys()):
-        print(f"{i+1}: {file_name}")
-    
-    # Look for a profile containing "Velocity profile"
+    # Auto-select CCA profile - same logic as aneurysm_run.py
     cca_profile_key = None
     for profile_key in flow_profile_data.keys():
         if "Velocity profile" in profile_key:
@@ -208,11 +232,6 @@ if __name__ == "__main__":
     if cca_profile_key:
         selected_profile = cca_profile_key
         selected_data = flow_profile_data[selected_profile]
-        
-        # Auto-select the CCA column
-        print("Available columns:")
-        for i, col_name in enumerate(selected_data['y'].keys()):
-            print(f"{i}: {col_name}")
         
         x_col = selected_data['x']
         
@@ -232,9 +251,9 @@ if __name__ == "__main__":
         y_col = selected_data['y'][y_col_name]
         
         # Include profile name, selected column name, and units
-        profile_name = f"{selected_profile}_{y_col_name}"
+        profile_name = f"{selected_profile}_{y_col_name}_PERFORMANCE_TEST"
         units = selected_data.get('units', 'unknown')
-        print(f"Automatically selected flow profile: {profile_name} (units: {units})")
+        print(f"Flow profile: {profile_name} (units: {units})")
         
         flow_profile = {
             'name': profile_name,
@@ -242,74 +261,72 @@ if __name__ == "__main__":
         }
     else:
         # Fallback to default sinusoidal
-        print("CCA profile not found. Defaulting to sinusoidal with 1Hz oscillation")
-        flow_profile = {'name': 'Sinusoidal_1Hz', 'data': None}
+        print("CCA profile not found. Using sinusoidal profile")
+        flow_profile = {'name': 'Sinusoidal_1Hz_PERFORMANCE_TEST', 'data': None}
 
-    import warp as wp
-    wp.clear_kernel_cache()     # Clear kernel cache to avoid conflicts with new kernel code
+    # Configure spatial profile parameters - exactly as aneurysm_run.py
+    spatial_profile_params = {
+        'n': 1.7,  # Power-law exponent for blunted paraboloid
+        'scale_factor': 1.0
+    }
 
-    # Configure spatial profile parameters
-    spatial_profile_params = {}
-    if args.spatial_profile == 'blunted_paraboloid':
-        spatial_profile_params['n'] = args.power_law_exponent
-        spatial_profile_params['scale_factor'] = 1.0  # Can be modified for time-varying profiles
-    elif args.spatial_profile == 'uniform':
-        # No additional parameters needed for uniform profile
-        pass
-
-    # Create output directory with spatial profile included in name
-    sp_name = "uniform" if args.spatial_profile == "uniform" else ("blunted" if args.spatial_profile == "blunted_paraboloid" else "poiseuille")
+    # Create unique output directory for performance testing
     base_dir = os.getcwd()
-    output_path = os.path.join(base_dir, f"../results/aneurysm_flow/CCA_simulation_results_nnbgk_tdzh_{sp_name}")
-    # Create parent directory if it doesn't exist
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    print(f"Output will be saved to: {output_path}")
+    output_path = os.path.join(base_dir, f"../results/performance_tests/aneurysm_performance_{args.backend.lower()}")
+    os.makedirs(output_path, exist_ok=True)
+    print(f"Performance results will be saved to: {output_path}")
 
-    # Delete the output directory if it exists
-    delete_directory_if_exists(output_path)
+    print("\n" + "="*50)
+    print("CREATING SIMULATION WITH EXACT PARAMETERS")
+    print("="*50)
 
-    print("\n===========================================")
-    print("ANEURYSM SIMULATION CONFIGURATION")
-    print("===========================================")
-    print(f"Boundary condition: Time-dependent Zou-He (TDZH)")
-    print(f"Collision operator: Non-Newtonian BGK (NNBGK)")
-    print(f"Spatial profile: {args.spatial_profile}")
-    if args.spatial_profile == 'blunted_paraboloid':
-        print(f"Power-law exponent (n): {args.power_law_exponent}")
-    print(f"Flow profile: {flow_profile['name']}")
-    print("===========================================\n")
-
-    # Create simulation with realistic vessel parameters
+    # Create simulation with EXACT parameters from aneurysm_run.py
     simulation = aneurysm_simulation_setup(
-        vessel_length_mm=vessel_length_mm,         # 15mm vessel length
-        vessel_diameter_mm=vessel_diameter_mm,        # vessel diameter (typical cerebral artery)
-        bulge_horizontal_mm=12,       # 12mm horizontal bulge
-        bulge_vertical_mm=8,         # 8mm vertical bulge
-        resolution_mm=resolution_mm,          # resolution
-        dynamic_viscosity=0.0035,    # Blood dynamic viscosity (Pa·s)
-        blood_density=1056,          # Blood density (kg/m³)
-        dt=dt,                       # Time step
-        fps=100,                     # Output frames per second
-        flow_profile=flow_profile,   # Pass selected flow profile with name
-        output_path=output_path,     # Pass the output path
-        save_wss_png=args.generate_pngs,  # Pass the generate-pngs flag as save_wss_png
-        spatial_profile_type=args.spatial_profile,  # Pass spatial profile type
-        spatial_profile_params=spatial_profile_params  # Pass spatial profile parameters
+        vessel_length_mm=vessel_length_mm,      # 35mm vessel length
+        vessel_diameter_mm=vessel_diameter_mm,  # 6.5mm vessel diameter
+        bulge_horizontal_mm=12,                 # 12mm horizontal bulge
+        bulge_vertical_mm=8,                    # 8mm vertical bulge
+        resolution_mm=resolution_mm,            # 0.02mm resolution
+        dynamic_viscosity=0.0035,               # Blood dynamic viscosity (Pa·s)
+        blood_density=1056,                     # Blood density (kg/m³)
+        dt=dt,                                  # 1e-5 time step
+        fps=1,                                  # Minimal fps for performance testing
+        flow_profile=flow_profile,              # CCA flow profile
+        output_path=output_path,                # Performance test output path
+        save_wss_png=False,                     # Disable PNG generation for performance
+        spatial_profile_type="blunted_paraboloid",  # Blunted paraboloid profile
+        spatial_profile_params=spatial_profile_params,  # n=1.7
+        performance_testing=True,               # Enable performance testing mode
+        backend=backend                         # Pass the selected backend
     )
 
-    # Run simulation for 1 second with warmup
-    simulation.run_for_duration(
-        duration_seconds=1.0,
-        warmup_seconds=2.0    # Run for 2.0 seconds before starting visualization
+    print(f"\nGrid shape: {simulation.grid_shape}")
+    print(f"Total nodes: {simulation.grid_shape[0] * simulation.grid_shape[1]:,}")
+
+    print("\n" + "="*50)
+    print("STARTING PERFORMANCE TEST")
+    print("="*50)
+    print("MLUPS will be calculated after warmup completion...")
+    print("Post-processing is DISABLED for pure performance measurement")
+
+    # Run simulation with same parameters as aneurysm_run.py
+    # MLUPS will be calculated and output after warmup due to performance_testing=True
+    # Set a very high post-process interval to minimize interruptions
+    total_steps = simulation.run_for_duration(
+        duration_seconds=args.duration_seconds,  # Analysis time
+        warmup_seconds=args.warmup_seconds,      # Warmup time
+        post_process_interval=10000              # Very high interval to minimize status updates
     )
 
-    print("\nSimulation complete!")
+    print("\n" + "="*60)
+    print("PERFORMANCE TEST COMPLETED")
+    print("="*60)
+    print(f"Total steps executed: {total_steps:,}")
     print(f"Results saved to: {simulation.output_dir}")
     
-    # TODO:
-    # look into the post_process method to see if it can be modified to save the results in a more useful format
-    # this includes extraction of blood vessel features such as wall shear stress, velocity profiles, etc.
-    # try to modify the speed to use a newtonian model, or better yet, a non-newtonian model
-    # adjust the velocity to better reflect a fluid flow in a blood vessel (set 0.4)
-    # look into the boundary conditions to see if they can be modified to better reflect the conditions in a blood vessel
-    # expand to 3D timestep
+    # The MLUPS results are automatically saved by save_simulation_parameters
+    # with a unique filename including timestamp
+    print("\nPerformance metrics saved in simulation parameters JSON file.")
+    print("Check the output directory for detailed performance data.")
+    
+    print("\nPerformance testing complete!")

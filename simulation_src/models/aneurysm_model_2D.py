@@ -25,7 +25,7 @@ from utils.wss_calculation import calculate_wss as wss_calculator
 MM_TO_M = 0.001
 
 class AneurysmSimulation2D:
-    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params, output_path=None):
+    def __init__(self, omega, grid_shape, velocity_set, backend, precision_policy, resolution, input_params, output_path=None, performance_testing=False):
         # initialize backend
         xlb.init(
             velocity_set=velocity_set,
@@ -41,6 +41,7 @@ class AneurysmSimulation2D:
         self.precision_policy = precision_policy
         self.omega = omega
         self.resolution = resolution
+        self.performance_testing = performance_testing
         
         self.dt = input_params["dt"]
         self.dx = input_params["dx"]
@@ -66,12 +67,22 @@ class AneurysmSimulation2D:
             # Default output directory
             self.output_dir = Path("../aneurysm_simulation_results")
             
-        self.vtk_dir = self.output_dir / "vtk"
-        self.img_dir = self.output_dir / "images"
-        self.params_dir = self.output_dir / "parameters"
+        # Only create VTK and image directories if not in performance testing mode
+        if not self.performance_testing:
+            self.vtk_dir = self.output_dir / "vtk"
+            self.img_dir = self.output_dir / "images"
+            self.params_dir = self.output_dir / "parameters"
+            directories_to_create = [self.output_dir, self.vtk_dir, self.img_dir, self.params_dir]
+        else:
+            # For performance testing, only create minimal directories
+            self.params_dir = self.output_dir / "parameters"
+            directories_to_create = [self.output_dir, self.params_dir]
+            # Set vtk_dir and img_dir to None for performance testing
+            self.vtk_dir = None
+            self.img_dir = None
         
         # Create fresh directories without asking
-        for directory in [self.output_dir, self.vtk_dir, self.img_dir, self.params_dir]:
+        for directory in directories_to_create:
             if directory.exists():
                 print(f"Removing existing directory: {directory}")
                 import shutil
@@ -239,7 +250,6 @@ class AneurysmSimulation2D:
             # Inlet: use new direct BC with spatial profile
             bc_inlet = TimeDependentZouHeBC(
                 bc_type="velocity",
-                prescribed_value=[self.input_params.get("max_velocity_lu", 0.04), 0.0],
                 indices=inlet,
                 dt=self.dt,
                 dx=self.dx,
@@ -309,7 +319,11 @@ class AneurysmSimulation2D:
         Returns:
             SpatialFlowProfile or None: Instance of the selected profile class, or None for uniform profile
         """
-        from profiles.spacial_flow_profiles import PoiseuilleProfile, BluntedParaboloidProfile
+        from profiles.spatial_flow_profiles import PoiseuilleProfile, BluntedParaboloidProfile
+        
+        # Get vessel parameters for profile calculation
+        vessel_diameter = self.input_params["vessel_diameter_lu"]  # Diameter of vessel in lattice units
+        vessel_centre = self.input_params["vessel_centre_lu"]      # Centre of vessel
         
         # Get profile configuration from input parameters
         profile_config = self.input_params.get("spatial_profile", {"type": "blunted_paraboloid"})
@@ -320,6 +334,8 @@ class AneurysmSimulation2D:
             return None
         elif profile_type == "poiseuille":
             return PoiseuilleProfile(
+                vessel_diameter=vessel_diameter,
+                vessel_centre=vessel_centre,
                 grid_shape=self.grid_shape,
                 backend=self.backend,
                 precision_policy=self.precision_policy,
@@ -331,6 +347,8 @@ class AneurysmSimulation2D:
             scale_factor = profile_config.get("scale_factor", 1.0)
             
             return BluntedParaboloidProfile(
+                vessel_diameter=vessel_diameter,
+                vessel_centre=vessel_centre,
                 grid_shape=self.grid_shape,
                 backend=self.backend,
                 precision_policy=self.precision_policy,
@@ -341,6 +359,8 @@ class AneurysmSimulation2D:
         else:
             print(f"Warning: Unknown spatial profile type '{profile_type}', defaulting to blunted paraboloid for aneurysm")
             return BluntedParaboloidProfile(
+                vessel_diameter=vessel_diameter,
+                vessel_centre=vessel_centre,
                 grid_shape=self.grid_shape,
                 backend=self.backend,
                 precision_policy=self.precision_policy,
@@ -448,6 +468,13 @@ class AneurysmSimulation2D:
         # Print completion of warmup phase
         if warmup_steps > 0:
             print(f"\nWarmup phase completed after {warmup_steps} steps")
+            
+            # If in performance testing mode, start MLUPS tracking after warmup
+            if self.performance_testing:
+                # Reset performance tracking for main simulation measurement
+                step_times = []
+                mlups_history = []
+                print("Starting MLUPS measurement for main simulation phase...")
         
         # Run the main simulation with reset timestep counter
         for i in range(main_steps + 1):
@@ -472,31 +499,36 @@ class AneurysmSimulation2D:
                 print(f"Warning: Zero step time detected at main step {i}")
 
             if i % post_process_interval == 0:
-                # Calculate statistics
-                main_progress = i / main_steps * 100
-                
-                # Use recent steps for performance estimate
-                recent_steps = min(post_process_interval, len(step_times))
-                avg_step_time = sum(step_times[-recent_steps:]) / recent_steps
-                recent_avg_mlups = (total_nodes / avg_step_time) / 1e6
-                remaining_steps = main_steps - i
-                estimated_seconds = remaining_steps * avg_step_time
-                
-                # Status update
-                print(f"\nStep {i}/{main_steps} ({main_progress:.1f}%) - Analysis phase")
-                print(f"Simulation Statistics:")
-                print(f"├── Current MLUPS: {current_mlups:.2f}")
-                print(f"├── Recent Average MLUPS: {recent_avg_mlups:.2f}")
-                print(f"├── Step time: {step_time*1000:.2f}ms")
-                print(f"└── ETA: {str(timedelta(seconds=int(estimated_seconds)))}")
-                
-                # Post-processing with reset timestep counter
-                post_start = time.time()
-                self.post_process(i)  # Use reset counter i instead of i+warmup_steps
-                post_time = time.time() - post_start
-                total_post_process_time += post_time
-                post_process_calls += 1
-                print(f"\nPost-processing time: {post_time:.3f}s")
+                # Skip all post-processing and status updates when in performance testing mode
+                if not self.performance_testing:
+                    # Calculate statistics
+                    main_progress = i / main_steps * 100
+                    
+                    # Use recent steps for performance estimate
+                    recent_steps = min(post_process_interval, len(step_times))
+                    avg_step_time = sum(step_times[-recent_steps:]) / recent_steps
+                    recent_avg_mlups = (total_nodes / avg_step_time) / 1e6
+                    remaining_steps = main_steps - i
+                    estimated_seconds = remaining_steps * avg_step_time
+                    
+                    # Status update
+                    print(f"\nStep {i}/{main_steps} ({main_progress:.1f}%) - Analysis phase")
+                    print(f"Simulation Statistics:")
+                    print(f"├── Current MLUPS: {current_mlups:.2f}")
+                    print(f"├── Recent Average MLUPS: {recent_avg_mlups:.2f}")
+                    print(f"├── Step time: {step_time*1000:.2f}ms")
+                    print(f"└── ETA: {str(timedelta(seconds=int(estimated_seconds)))}")
+                    
+                    # Post-processing with reset timestep counter
+                    post_start = time.time()
+                    self.post_process(i)  # Use reset counter i instead of i+warmup_steps
+                    post_time = time.time() - post_start
+                    total_post_process_time += post_time
+                    post_process_calls += 1
+                    print(f"\nPost-processing time: {post_time:.3f}s")
+                else:
+                    # For performance testing, just count the post-process calls but do nothing
+                    post_process_calls += 1
     
         # Final statistics
         total_time = time.time() - start_time
@@ -533,6 +565,20 @@ class AneurysmSimulation2D:
         # Calculate physical time simulated
         simulated_total_time = self.dt * (warmup_steps + main_steps)
         
+        # Output MLUPS for performance testing mode
+        if self.performance_testing:
+            print(f"\n=== PERFORMANCE TESTING RESULTS ===")
+            print(f"Final Average MLUPS: {avg_mlups:.2f}")
+            print(f"Maximum MLUPS achieved: {max(mlups_history) if mlups_history else 0.0:.2f}")
+            print(f"Grid size: {self.grid_shape[0]}x{self.grid_shape[1]} = {self.grid_shape[0] * self.grid_shape[1]:,} nodes")
+            print(f"Backend: {self.backend}")
+            if mlups_history:
+                mlups_std = np.std(mlups_history)
+                mlups_cv = (mlups_std / avg_mlups * 100) if avg_mlups > 0 else 0.0
+                print(f"MLUPS Standard Deviation: {mlups_std:.2f}")
+                print(f"MLUPS Coefficient of Variation: {mlups_cv:.2f}%")
+            print(f"===================================")
+        
         # Save final performance metrics
         self.save_simulation_parameters(
             final_metrics={
@@ -555,6 +601,142 @@ class AneurysmSimulation2D:
         )
         
         return warmup_steps + main_steps
+
+    def run_performance_test(self, warmup_steps=1000, test_steps=1000):
+        """
+        Run a performance test focused on MLUPS measurement after warmup.
+        This method skips post-processing and file I/O for pure performance measurement.
+        
+        Args:
+            warmup_steps (int): Number of steps to run for warmup before measurement
+            test_steps (int): Number of steps to measure for MLUPS calculation
+            
+        Returns:
+            dict: Performance metrics including average MLUPS
+        """
+        if not self.performance_testing:
+            print("WARNING: Performance testing not enabled. Run with performance_testing=True for optimal results.")
+        
+        total_nodes = self.grid_shape[0] * self.grid_shape[1]
+        
+        print(f"\n=== Performance Test Configuration ===")
+        print(f"Backend: {self.backend}")
+        print(f"Grid size: {self.grid_shape[0]}x{self.grid_shape[1]} = {total_nodes:,} nodes")
+        print(f"Warmup steps: {warmup_steps:,}")
+        print(f"Test steps: {test_steps:,}")
+        print(f"Boundary conditions: {[type(bc).__name__ for bc in self.boundary_conditions]}")
+        
+        # Warmup phase
+        print(f"\nRunning warmup phase...")
+        warmup_start = time.time()
+        for i in range(warmup_steps):
+            self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, i)
+            self.f_0, self.f_1 = self.f_1, self.f_0
+            
+            if i % 200 == 0:
+                progress = i / warmup_steps * 100
+                print(f"\rWarmup progress: {progress:.1f}%", end="")
+        
+        warmup_time = time.time() - warmup_start
+        print(f"\nWarmup completed in {warmup_time:.2f} seconds")
+        
+        # Performance measurement phase
+        print(f"\nRunning performance measurement...")
+        step_times = []
+        mlups_values = []
+        
+        measurement_start = time.time()
+        for i in range(test_steps):
+            step_start = time.time()
+            self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, warmup_steps + i)
+            self.f_0, self.f_1 = self.f_1, self.f_0
+            step_end = time.time()
+            
+            step_time = step_end - step_start
+            step_times.append(step_time)
+            
+            if step_time > 0:
+                mlups = (total_nodes / step_time) / 1e6
+                mlups_values.append(mlups)
+            
+            if i % 200 == 0:
+                progress = i / test_steps * 100
+                current_mlups = mlups_values[-1] if mlups_values else 0.0
+                print(f"\rMeasurement progress: {progress:.1f}% - Current MLUPS: {current_mlups:.2f}", end="")
+        
+        measurement_time = time.time() - measurement_start
+        
+        # Calculate performance metrics
+        avg_step_time = sum(step_times) / len(step_times)
+        avg_mlups = sum(mlups_values) / len(mlups_values) if mlups_values else 0.0
+        max_mlups = max(mlups_values) if mlups_values else 0.0
+        min_mlups = min(mlups_values) if mlups_values else 0.0
+        
+        # Calculate stability metrics
+        mlups_std = np.std(mlups_values) if mlups_values else 0.0
+        mlups_cv = (mlups_std / avg_mlups * 100) if avg_mlups > 0 else 0.0
+        
+        print(f"\n\n=== Performance Test Results ===")
+        print(f"Grid size: {self.grid_shape[0]}x{self.grid_shape[1]} = {total_nodes:,} nodes")
+        print(f"Backend: {self.backend}")
+        print(f"Total measurement time: {measurement_time:.2f} seconds")
+        print(f"")
+        print(f"MLUPS Performance:")
+        print(f"├── Average MLUPS: {avg_mlups:.2f}")
+        print(f"├── Maximum MLUPS: {max_mlups:.2f}")
+        print(f"├── Minimum MLUPS: {min_mlups:.2f}")
+        print(f"├── Standard Deviation: {mlups_std:.2f}")
+        print(f"└── Coefficient of Variation: {mlups_cv:.2f}%")
+        print(f"")
+        print(f"Timing Performance:")
+        print(f"├── Average step time: {avg_step_time*1000:.2f}ms")
+        print(f"├── Minimum step time: {min(step_times)*1000:.2f}ms")
+        print(f"├── Maximum step time: {max(step_times)*1000:.2f}ms")
+        print(f"└── Steps per second: {1/avg_step_time:.1f}")
+        
+        # Save performance results if not in performance testing mode
+        if not self.performance_testing:
+            performance_results = {
+                "backend": str(self.backend),
+                "grid_shape": list(self.grid_shape),
+                "total_nodes": total_nodes,
+                "test_configuration": {
+                    "warmup_steps": warmup_steps,
+                    "test_steps": test_steps,
+                    "warmup_time": warmup_time,
+                    "measurement_time": measurement_time
+                },
+                "mlups_performance": {
+                    "average_mlups": avg_mlups,
+                    "maximum_mlups": max_mlups,
+                    "minimum_mlups": min_mlups,
+                    "standard_deviation": mlups_std,
+                    "coefficient_of_variation": mlups_cv
+                },
+                "timing_performance": {
+                    "average_step_time_ms": avg_step_time * 1000,
+                    "minimum_step_time_ms": min(step_times) * 1000,
+                    "maximum_step_time_ms": max(step_times) * 1000,
+                    "steps_per_second": 1 / avg_step_time
+                },
+                "boundary_conditions": [type(bc).__name__ for bc in self.boundary_conditions],
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # Save to file
+            perf_file = self.output_dir / "performance_test_results.json"
+            with open(perf_file, 'w') as f:
+                json.dump(performance_results, f, indent=2)
+            print(f"\nPerformance results saved to: {perf_file}")
+        
+        return {
+            "avg_mlups": avg_mlups,
+            "max_mlups": max_mlups,
+            "min_mlups": min_mlups,
+            "avg_step_time": avg_step_time,
+            "mlups_std": mlups_std,
+            "mlups_cv": mlups_cv
+        }
 
     def post_process(self, i):
         """
@@ -899,11 +1081,16 @@ class AneurysmSimulation2D:
                     "total_steps": final_metrics["total_steps"],
                     "post_process_calls": final_metrics["post_process_calls"],
                     "steps_per_post_process": final_metrics["total_steps"] // final_metrics["post_process_calls"] if final_metrics["post_process_calls"] > 0 else 0
-                }
+                },
+                "is_performance_test": self.performance_testing
             }
         
-        # Generate filename with timestamp
-        filename = self.params_dir / f"{filename_prefix}.json"
+        # Generate filename - use simple naming for performance testing
+        if self.performance_testing:
+            backend_name = str(self.backend).split('.')[-1].lower()
+            filename = self.params_dir / f"performance_test_results_{backend_name}.json"
+        else:
+            filename = self.params_dir / f"{filename_prefix}.json"
         
         # Convert all NumPy arrays and other non-serializable objects to JSON serializable types
         serializable_parameters = numpy_to_json_serializable(parameters)
@@ -911,7 +1098,15 @@ class AneurysmSimulation2D:
         with open(filename, 'w') as f:
             json.dump(serializable_parameters, f, indent=4)
         
-        print(f"Parameters and performance metrics saved to {filename}")
+        if self.performance_testing:
+            print(f"\n🚀 PERFORMANCE TEST RESULTS SAVED 🚀")
+            print(f"File: {filename}")
+            if final_metrics:
+                print(f"💾 Average MLUPS: {round(final_metrics['avg_mlups'], 2)}")
+                print(f"💾 Peak MLUPS: {round(final_metrics['best_mlups'], 2)}")
+                print(f"💾 Backend: {str(self.backend).split('.')[-1]}")
+        else:
+            print(f"Parameters and performance metrics saved to {filename}")
         print(f"Collision operator details saved: {collision_type}")
 
 

@@ -42,4 +42,4 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 EXPOSE 8888
 
 # Default command to run when container starts
-CMD ["python", "simulation_src/standard_run.py"]
+CMD ["python", "simulation_src/aneurysm_run.py", "--help"]

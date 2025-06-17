@@ -139,9 +139,6 @@ class TimeDependentZouHeBC(BoundaryCondition):
         
         # Pre-calculate whether we have a spatial profile for static compilation
         _has_spatial_profile = wp.static(wp.int32(1 if self.profile is not None else 0))
-        
-        # Pre-calculate spatial profile availability as static boolean
-        _has_spatial_profile = wp.static(wp.int32(int(self.profile is not None)))
 
         
         # Helper functions copied from ZouHe

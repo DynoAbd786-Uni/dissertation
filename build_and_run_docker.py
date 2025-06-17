@@ -54,8 +54,8 @@ def run_container(tag="dissertation", mode="standard", script=None, gpu=True):
     """Run the Docker container in specified mode"""
     pwd = os.getcwd()
     
-    # Use sudo consistently (or remove it in all places if you fixed permissions)
-    cmd = ['sudo', 'docker', 'run']
+    # Build docker run command
+    cmd = ['docker', 'run']
     
     # Add GPU support if requested and available
     if gpu:
@@ -84,6 +84,7 @@ def run_container(tag="dissertation", mode="standard", script=None, gpu=True):
     
     # Run the container
     print(f"Running container in {mode} mode...")
+    print(f"Command: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True)
         return True
