@@ -354,11 +354,17 @@ if __name__ == "__main__":
     print(f"Maximum velocity: {simulation.input_params['max_velocity']} m/s ({simulation.input_params['max_velocity_lu']:.6f} LU/step)")
     print("===========================================\n")
     
-    # Run simulation for 1 second with warmup
-    print("\nRunning simulation...")
+    # Run simulation: 1 second main run time, with 2 or 3 seconds warmup (3 seconds for long pipe)
+    duration_seconds =  1.0
+    warmup_seconds = 3.0 if args.long_pipe else 2.0
+
+    print(f"\nRunning simulation for {duration_seconds} seconds (with {warmup_seconds}s warmup)...")
+    if args.long_pipe:
+        print("🔥 Long pipe mode: Extended simulation duration for better flow development analysis")
+
     simulation.run_for_duration(
-        duration_seconds=1.0,
-        warmup_seconds=2.0    # Run for 2.0 seconds before starting visualization
+        duration_seconds=duration_seconds,
+        warmup_seconds=warmup_seconds    # Run for 2.0 or 3.0 seconds before starting visualization
     )
     
     print("\nSimulation complete!")
